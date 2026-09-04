@@ -3,32 +3,31 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Alpha Pack · At risk</title>
+  <title>Alpha Pack · Demotions</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@450;560;700&family=JetBrains+Mono:wght@450;650&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body data-page="risk">
+<body data-page="demotions">
   <div class="app">
     <header class="top">
       <div class="brand">
         <h1>Alpha Pack ClanData</h1>
-        <div class="sub" id="updated">War board</div>
+        <div class="sub" id="updated">Demotions</div>
       </div>
-            <nav class="nav">
+      <nav class="nav">
         <a href="index.html">War status</a>
         <a href="efficiency.html">Attack efficiency</a>
-        <a href="risk.html" class="active">At risk</a>
+        <a href="risk.html">At risk</a>
         <a href="promotions.html">Promotions</a>
-        <a href="demotions.html">Demotions</a>
+        <a href="demotions.html" class="active">Demotions</a>
         <a href="rules.html">Rules</a>
       </nav>
     </header>
     <div class="stats" id="stats"></div>
     <div class="toolbar">
       <input class="search" id="search" type="search" placeholder="Search name or tag" />
-      
     </div>
     <div class="card">
       <div class="table-wrap">
@@ -44,9 +43,9 @@
           <tbody id="tbody"></tbody>
         </table>
       </div>
-      <div class="empty" id="empty" hidden>No members match.</div>
+      <div class="empty" id="empty" hidden>No demotion or removal flags right now.</div>
     </div>
-    <p class="foot">Same metrics as the Sheet / Softr — display only. No new features.</p>
+    <p class="foot">From Suggested Action after Monday war archive — Demote / Flag for Removal. Not live mid-week.</p>
   </div>
   <script src="app.js"></script>
 </body>

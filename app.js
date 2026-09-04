@@ -12,7 +12,8 @@ function num(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; }
 function actionClass(action) {
   const a = (action || '').toLowerCase();
   if (!a || a === 'ok') return 'ok';
-  if (a.includes('demote') || a.includes('kick')) return 'bad';
+  if (a.includes('promote') || a.includes('fast-track')) return 'ok';
+  if (a.includes('demote') || a.includes('kick') || a.includes('removal')) return 'bad';
   return 'warn';
 }
 
@@ -49,6 +50,12 @@ function filtered() {
   }
   if (state.page === 'risk') {
     rows = rows.filter(m => (m.action || '').toLowerCase() !== 'ok' && m.action);
+  }
+  if (state.page === 'promotions') {
+    rows = rows.filter(m => /^promote|fast-track/i.test(m.action || ''));
+  }
+  if (state.page === 'demotions') {
+    rows = rows.filter(m => /demote|flag for removal/i.test(m.action || ''));
   }
   const key = state.sortKey;
   const dir = state.sortDir === 'asc' ? 1 : -1;
@@ -93,7 +100,7 @@ function renderTable() {
       </tr>`).join('');
     return;
   }
-  if (state.page === 'risk') {
+  if (state.page === 'risk' || state.page === 'promotions' || state.page === 'demotions') {
     tbody.innerHTML = rows.map(m => `
       <tr>
         <td><div class="name">${esc(m.name)}</div><div class="role">${esc(m.role)}</div></td>
@@ -135,7 +142,8 @@ async function boot() {
   const updated = document.getElementById('updated');
   if (updated) updated.textContent = data.updated ? `Data: ${data.updated}` : '';
   if (state.page === 'efficiency') { state.sortKey = 'efficiency'; state.sortDir = 'desc'; }
-  if (state.page === 'risk') { state.sortKey = 'missed'; state.sortDir = 'desc'; }
+  if (state.page === 'risk' || state.page === 'demotions') { state.sortKey = 'missed'; state.sortDir = 'desc'; }
+  if (state.page === 'promotions') { state.sortKey = 'name'; state.sortDir = 'asc'; }
   renderStats(state.members);
   renderTable();
   document.getElementById('search')?.addEventListener('input', e => { state.q = e.target.value; renderTable(); });
