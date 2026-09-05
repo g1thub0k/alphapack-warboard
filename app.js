@@ -10,6 +10,16 @@ const state = {
 
 function num(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; }
 
+function shortAction(action) {
+  const a = (action || 'OK').trim();
+  if (!a || a.toUpperCase() === 'OK') return 'OK';
+  if (/flag for removal/i.test(a)) return 'Flag';
+  if (/^demote to /i.test(a)) return 'Demote';
+  if (/^promote to /i.test(a)) return 'Promote';
+  if (/fast-track/i.test(a)) return 'Fast-Track';
+  return a;
+}
+
 function actionClass(action) {
   const a = (action || '').toLowerCase();
   if (!a || a === 'ok') return 'ok';
@@ -131,7 +141,7 @@ function renderTable() {
       <td class="mono">${num(m.missed).toFixed(0)}</td>
       ${dayCell(m.d1)}${dayCell(m.d2)}${dayCell(m.d3)}${dayCell(m.d4)}
       ${daysCompactCell(m)}
-      <td><span class="badge ${actionClass(m.action)}">${esc(m.action || 'OK')}</span></td>
+      <td><span class="badge ${actionClass(m.action)}" title="${esc(m.action || 'OK')}">${esc(shortAction(m.action))}</span></td>
       <td class="mono">${num(m.efficiency).toFixed(1)}</td>
     </tr>`).join('');
 }

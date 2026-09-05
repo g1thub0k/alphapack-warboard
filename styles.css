@@ -116,10 +116,22 @@ tr:hover td { background: var(--row-hover); }
 .days-compact .dchip.miss { color: var(--bad); font-weight: 700; }
 .days-compact .dchip.mut { color: var(--muted); opacity: 0.75; }
 .days-compact .ddot { color: var(--border); margin: 0 3px; }
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
 @media (max-width: 800px) {
   .days-wide { display: none !important; }
   .days-compact, .days-compact-h { display: table-cell; }
-  .days-compact { min-width: 7.5rem; }
-  /* War table should fit portrait without sideways scroll */
-  body[data-page="war"] .table-wrap { overflow-x: visible; }
+  .days-compact { min-width: 0; }
+  /* Tighter war table so portrait usually fits; scroll still works if not */
+  body[data-page="war"] th,
+  body[data-page="war"] td { padding: 8px 7px; font-size: 0.84rem; }
+  body[data-page="war"] .badge {
+    font-size: 0.68rem; padding: 2px 6px; max-width: 4.8rem;
+    white-space: normal; line-height: 1.15; justify-content: center; text-align: center;
+  }
+  body[data-page="war"] .role { font-size: 0.75rem; }
+  body[data-page="war"] .days-compact .ddot { margin: 0 2px; }
 }
