@@ -22,14 +22,26 @@ a { color: inherit; text-decoration: none; }
   display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center;
   justify-content: space-between; margin-bottom: 20px;
 }
-.brand { display: flex; flex-direction: column; gap: 2px; }
+.brand { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .brand h1 { margin: 0; font-size: 1.35rem; letter-spacing: 0.02em; }
 .brand .sub { color: var(--muted); font-size: 0.85rem; }
-.nav { display: flex; gap: 6px; background: var(--panel); padding: 4px; border-radius: 999px; border: 1px solid var(--border); }
+.nav {
+  display: flex; gap: 6px; background: var(--panel); padding: 4px;
+  border-radius: 999px; border: 1px solid var(--border);
+  max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+}
+.nav::-webkit-scrollbar { display: none; }
 .nav a {
-  padding: 8px 14px; border-radius: 999px; color: var(--muted); font-size: 0.9rem; font-weight: 560;
+  padding: 8px 14px; border-radius: 999px; color: var(--muted);
+  font-size: 0.9rem; font-weight: 560;
+  flex: 0 0 auto; white-space: nowrap;
 }
 .nav a.active, .nav a:hover { background: var(--panel2); color: var(--text); }
+@media (max-width: 800px) {
+  .top { flex-direction: column; align-items: stretch; gap: 10px; }
+  .nav { width: 100%; border-radius: 14px; }
+}
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin-bottom: 16px; }
 @media (max-width: 800px) { .stats { grid-template-columns: repeat(2, 1fr); } }
 .stat {
@@ -96,3 +108,18 @@ tr:hover td { background: var(--row-hover); }
 .daycard.empty .line { color: var(--muted); font-weight: 450; }
 .daycard.live .line { color: var(--text); }
 .daycard .line .em { color: var(--good); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Compact Days column: phone only; desktop keeps Day 1–4 */
+.days-compact, .days-compact-h { display: none; }
+.days-compact .dchip { font-weight: 650; }
+.days-compact .dchip.ok { color: var(--muted); }
+.days-compact .dchip.miss { color: var(--bad); font-weight: 700; }
+.days-compact .dchip.mut { color: var(--muted); opacity: 0.75; }
+.days-compact .ddot { color: var(--border); margin: 0 3px; }
+@media (max-width: 800px) {
+  .days-wide { display: none !important; }
+  .days-compact, .days-compact-h { display: table-cell; }
+  .days-compact { min-width: 7.5rem; }
+  /* War table should fit portrait without sideways scroll */
+  body[data-page="war"] .table-wrap { overflow-x: visible; }
+}

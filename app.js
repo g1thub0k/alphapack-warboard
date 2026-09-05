@@ -74,9 +74,21 @@ function filtered() {
 
 function dayCell(v) {
   const n = dayVal(v);
-  if (n == null) return `<td class="daycell ok mono">—</td>`;
-  if (n > 0) return `<td class="daycell miss mono">${n}</td>`;
-  return `<td class="daycell ok mono">0</td>`;
+  if (n == null) return `<td class="daycell days-wide ok mono">—</td>`;
+  if (n > 0) return `<td class="daycell days-wide miss mono">${n}</td>`;
+  return `<td class="daycell days-wide ok mono">0</td>`;
+}
+
+function dayChip(v) {
+  const n = dayVal(v);
+  if (n == null) return `<span class="dchip mut">—</span>`;
+  if (n > 0) return `<span class="dchip miss">${n}</span>`;
+  return `<span class="dchip ok">0</span>`;
+}
+
+function daysCompactCell(m) {
+  const chips = [m.d1, m.d2, m.d3, m.d4].map(dayChip).join('<span class="ddot">·</span>');
+  return `<td class="days-compact mono">${chips}</td>`;
 }
 
 function renderTable() {
@@ -112,12 +124,13 @@ function renderTable() {
       </tr>`).join('');
     return;
   }
-  // war
+  // war — desktop: Day 1–4 columns; portrait: one compact Days column
   tbody.innerHTML = rows.map(m => `
     <tr>
       <td><div class="name">${esc(m.name)}</div><div class="role">${esc(m.role)}</div></td>
       <td class="mono">${num(m.missed).toFixed(0)}</td>
       ${dayCell(m.d1)}${dayCell(m.d2)}${dayCell(m.d3)}${dayCell(m.d4)}
+      ${daysCompactCell(m)}
       <td><span class="badge ${actionClass(m.action)}">${esc(m.action || 'OK')}</span></td>
       <td class="mono">${num(m.efficiency).toFixed(1)}</td>
     </tr>`).join('');
