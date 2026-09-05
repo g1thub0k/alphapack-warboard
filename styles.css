@@ -77,3 +77,22 @@ tr:hover td { background: var(--row-hover); }
 .daycell.ok { color: var(--muted); }
 .foot { margin-top: 14px; color: var(--muted); font-size: 0.8rem; }
 .empty { padding: 28px; text-align: center; color: var(--muted); }
+
+.daycards {
+  display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px;
+  margin-bottom: 14px;
+}
+@media (max-width: 800px) { .daycards { grid-template-columns: repeat(2, 1fr); } }
+.daycard {
+  background: linear-gradient(180deg, var(--panel), var(--panel2));
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px;
+  min-height: 72px; display: flex; flex-direction: column; gap: 6px;
+}
+.daycard .day {
+  color: var(--accent); font-size: 0.78rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+.daycard .line { font-size: 0.95rem; font-weight: 560; line-height: 1.35; }
+.daycard.empty .line { color: var(--muted); font-weight: 450; }
+.daycard.live .line { color: var(--text); }
+.daycard .line .em { color: var(--good); font-weight: 700; font-variant-numeric: tabular-nums; }

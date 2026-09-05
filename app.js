@@ -5,6 +5,7 @@ const state = {
   q: '',
   filter: 'all',
   page: document.body.dataset.page || 'war',
+  dayCardsLoaded: false,
 };
 
 function num(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; }
@@ -135,24 +136,243 @@ function setSort(key) {
   renderTable();
 }
 
-async function boot() {
-  const res = await fetch('data/clandata.json', { cache: 'no-store' });
-  const data = await res.json();
-  state.members = data.members || [];
+// Live ClanData tab (same Sheet Softr reads). gviz CSV allows CORS from GitHub Pages.
+const SHEET_ID = '1ffsk-7UxvODOG8YHL7Cnqe_Zxu2iIrzPR7Fxqi8p-9U';
+const SHEET_GID = '0';
+const SHEET_CSV_URL =
+  `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}`;
+const DAILY_SUMMARY_GID = '616046757';
+const DAILY_SUMMARY_CSV_URL =
+  `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${DAILY_SUMMARY_GID}`;
+const BATTLE_DAY_LABELS = ['Thu', 'Fri', 'Sat', 'Sun'];
+
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let cell = '';
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    const next = text[i + 1];
+    if (inQuotes) {
+      if (c === '"' && next === '"') { cell += '"'; i++; }
+      else if (c === '"') { inQuotes = false; }
+      else { cell += c; }
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === ',') {
+      row.push(cell); cell = '';
+    } else if (c === '\n') {
+      row.push(cell); rows.push(row); row = []; cell = '';
+    } else if (c === '\r') {
+      // skip
+    } else {
+      cell += c;
+    }
+  }
+  if (cell.length || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.some(x => String(x).trim() !== ''));
+}
+
+function sheetRowsToMembers(csvText) {
+  const grid = parseCsv(csvText);
+  if (grid.length < 2) return [];
+  const headers = grid[0].map(h => String(h).trim());
+  const idx = (name) => headers.indexOf(name);
+  const get = (cells, name) => {
+    const i = idx(name);
+    return i >= 0 ? String(cells[i] ?? '').trim() : '';
+  };
+  return grid.slice(1).map(cells => ({
+    tag: get(cells, 'Player Tag'),
+    name: get(cells, 'Name'),
+    role: get(cells, 'Role'),
+    missed: num(get(cells, 'Missed Attacks')),
+    d1: get(cells, 'Day 1 Missed'),
+    d2: get(cells, 'Day 2 Missed'),
+    d3: get(cells, 'Day 3 Missed'),
+    d4: get(cells, 'Day 4 Missed'),
+    action: get(cells, 'Suggested Action'),
+    reason: get(cells, 'Reason'),
+    efficiency: num(get(cells, 'Attack Efficiency')),
+    contribution: num(get(cells, 'Contribution Score')),
+    rank: num(get(cells, 'Contribution Rank')),
+    thisWeek: get(cells, 'This Week Summary'),
+    lastWeek: get(cells, 'Last Week Summary'),
+    fame: num(get(cells, 'All-Time Fame')),
+    daysInClan: num(get(cells, 'Days in Clan')),
+  })).filter(m => m.name || m.tag);
+}
+
+
+function defaultDayCards() {
+  return BATTLE_DAY_LABELS.map((label, i) => ({
+    order: i + 1,
+    label,
+    perfect: 0,
+    total: 0,
+    summary: `${label}: —`,
+    empty: true,
+  }));
+}
+
+function parseDailySummary(csvText) {
+  const grid = parseCsv(csvText);
+  if (grid.length < 2) return null;
+  const headers = grid[0].map(h => String(h).trim());
+  const idx = (name) => headers.indexOf(name);
+  const get = (cells, name) => {
+    const i = idx(name);
+    return i >= 0 ? String(cells[i] ?? '').trim() : '';
+  };
+  const byOrder = {};
+  for (const cells of grid.slice(1)) {
+    const order = num(get(cells, 'Day Order')) || 0;
+    if (!order) continue;
+    const label = get(cells, 'Day Label') || BATTLE_DAY_LABELS[order - 1] || `Day ${order}`;
+    const perfect = num(get(cells, 'Perfect'));
+    const total = num(get(cells, 'Total'));
+    let summary = get(cells, 'Summary');
+    const empty = total <= 0 || !summary || summary.endsWith('—') || summary.includes(': —');
+    if (!summary) {
+      summary = empty ? `${label}: —` : `${label}: ${perfect} perfect attacks out of ${total} members`;
+    }
+    byOrder[order] = { order, label, perfect, total, summary, empty };
+  }
+  return BATTLE_DAY_LABELS.map((label, i) => {
+    const order = i + 1;
+    return byOrder[order] || { order, label, perfect: 0, total: 0, summary: `${label}: —`, empty: true };
+  });
+}
+
+function dayCardsFromMembers(members) {
+  const dayKeys = ['d1', 'd2', 'd3', 'd4'];
+  return BATTLE_DAY_LABELS.map((label, i) => {
+    const key = dayKeys[i];
+    const settled = members.filter(m => dayVal(m[key]) != null);
+    if (!settled.length) {
+      return { order: i + 1, label, perfect: 0, total: 0, summary: `${label}: —`, empty: true };
+    }
+    const perfect = settled.filter(m => dayVal(m[key]) === 0).length;
+    const total = settled.length;
+    return {
+      order: i + 1,
+      label,
+      perfect,
+      total,
+      summary: `${label}: ${perfect} perfect attacks out of ${total} members`,
+      empty: false,
+    };
+  });
+}
+
+function renderDayCards(cards) {
+  const el = document.getElementById('daycards');
+  if (!el) return;
+  const list = cards && cards.length ? cards : defaultDayCards();
+  el.innerHTML = list.map(c => {
+    const cls = c.empty ? 'daycard empty' : 'daycard live';
+    let line;
+    if (c.empty) {
+      line = `${esc(c.label)}: —`;
+    } else {
+      line = `${esc(c.label)}: <span class="em">${c.perfect}</span> perfect attacks out of ${c.total} members`;
+    }
+    return `<div class="${cls}"><div class="day">${esc(c.label)}</div><div class="line">${line}</div></div>`;
+  }).join('');
+}
+
+async function loadDailySummaryCards() {
+  const res = await fetch(DAILY_SUMMARY_CSV_URL, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`DailySummary HTTP ${res.status}`);
+  const text = await res.text();
+  if (!text.includes('Day Label') && !text.includes('Summary')) {
+    throw new Error('DailySummary response unexpected');
+  }
+  const cards = parseDailySummary(text);
+  if (!cards) throw new Error('DailySummary parse failed');
+  renderDayCards(cards);
+  return cards;
+}
+
+function setUpdatedLabel(text) {
   const updated = document.getElementById('updated');
-  if (updated) updated.textContent = data.updated ? `Data: ${data.updated}` : '';
+  if (updated) updated.textContent = text;
+}
+
+function applyMembers(members, label) {
+  state.members = members;
+  setUpdatedLabel(label);
   if (state.page === 'efficiency') { state.sortKey = 'efficiency'; state.sortDir = 'desc'; }
   if (state.page === 'risk' || state.page === 'demotions') { state.sortKey = 'missed'; state.sortDir = 'desc'; }
   if (state.page === 'promotions') { state.sortKey = 'name'; state.sortDir = 'asc'; }
   renderStats(state.members);
   renderTable();
+  // War page only: if DailySummary hasn't painted yet, derive chips from Day 1–4 columns.
+  if (document.getElementById('daycards') && !state.dayCardsLoaded) {
+    renderDayCards(dayCardsFromMembers(members));
+  }
+}
+
+async function loadLiveSheet() {
+  const res = await fetch(SHEET_CSV_URL, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Sheet HTTP ${res.status}`);
+  const text = await res.text();
+  if (!text.includes('Player Tag') && !text.includes('Name')) {
+    throw new Error('Sheet response did not look like ClanData CSV');
+  }
+  const members = sheetRowsToMembers(text);
+  if (!members.length) throw new Error('Sheet CSV parsed to 0 members');
+  const when = new Date().toLocaleString(undefined, {
+    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+  });
+  applyMembers(members, `Live from Sheet · ${when}`);
+}
+
+async function loadFallbackJson() {
+  const res = await fetch('data/clandata.json', { cache: 'no-store' });
+  const data = await res.json();
+  applyMembers(data.members || [], data.updated
+    ? `Cached snapshot · ${data.updated}`
+    : 'Cached snapshot (Sheet unreachable)');
+}
+
+async function boot() {
+  setUpdatedLabel('Loading live Sheet…');
+  const empty = document.getElementById('empty');
+  if (empty) { empty.hidden = true; }
+  if (document.getElementById('daycards')) {
+    renderDayCards(defaultDayCards());
+  }
+
+  const sheetPromise = loadLiveSheet().catch(async (err) => {
+    console.warn('Live Sheet failed, falling back to cached JSON', err);
+    try {
+      await loadFallbackJson();
+    } catch (err2) {
+      console.error(err2);
+      if (empty) {
+        empty.hidden = false;
+        empty.textContent = 'Could not load live Sheet or cached data.';
+      }
+      setUpdatedLabel('Data unavailable');
+    }
+  });
+
+  const daysPromise = document.getElementById('daycards')
+    ? loadDailySummaryCards()
+        .then(() => { state.dayCardsLoaded = true; })
+        .catch((err) => {
+          console.warn('DailySummary failed; using Day 1–4 from ClanData', err);
+          if (state.members.length) renderDayCards(dayCardsFromMembers(state.members));
+        })
+    : Promise.resolve();
+
+  await Promise.all([sheetPromise, daysPromise]);
+
   document.getElementById('search')?.addEventListener('input', e => { state.q = e.target.value; renderTable(); });
   document.getElementById('filter')?.addEventListener('change', e => { state.filter = e.target.value; renderTable(); });
   document.querySelectorAll('th[data-sort]').forEach(th => th.addEventListener('click', () => setSort(th.dataset.sort)));
 }
 
-boot().catch(err => {
-  const empty = document.getElementById('empty');
-  if (empty) { empty.hidden = false; empty.textContent = 'Could not load data/clandata.json'; }
-  console.error(err);
-});
+boot();
