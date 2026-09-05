@@ -65,7 +65,23 @@ select.filter {
 .card {
   background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
 }
-.table-wrap { overflow-x: auto; }
+/* On small screens, don't let the card clip the table scroller */
+@media (max-width: 800px) {
+  body[data-page="war"] .card { overflow: visible; }
+  body[data-page="war"] .table-wrap {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--panel);
+  }
+}
+.table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
+}
 table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
 th, td { padding: 11px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
 th {
@@ -116,22 +132,35 @@ tr:hover td { background: var(--row-hover); }
 .days-compact .dchip.miss { color: var(--bad); font-weight: 700; }
 .days-compact .dchip.mut { color: var(--muted); opacity: 0.75; }
 .days-compact .ddot { color: var(--border); margin: 0 3px; }
-.table-wrap {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-x: contain;
-}
 @media (max-width: 800px) {
+  .app { padding-left: 12px; padding-right: 12px; }
   .days-wide { display: none !important; }
   .days-compact, .days-compact-h { display: table-cell; }
   .days-compact { min-width: 0; }
-  /* Tighter war table so portrait usually fits; scroll still works if not */
+  /* Hide Eff on war portrait — frees width so Member/Missed/Days/Action fit */
+  body[data-page="war"] .col-eff { display: none !important; }
   body[data-page="war"] th,
-  body[data-page="war"] td { padding: 8px 7px; font-size: 0.84rem; }
+  body[data-page="war"] td { padding: 8px 6px; font-size: 0.82rem; }
   body[data-page="war"] .badge {
-    font-size: 0.68rem; padding: 2px 6px; max-width: 4.8rem;
-    white-space: normal; line-height: 1.15; justify-content: center; text-align: center;
+    font-size: 0.68rem; padding: 2px 6px;
+    white-space: nowrap; line-height: 1.15;
   }
-  body[data-page="war"] .role { font-size: 0.75rem; }
+  body[data-page="war"] .role { font-size: 0.72rem; }
   body[data-page="war"] .days-compact .ddot { margin: 0 2px; }
+  /* Let table grow past the screen so swipe-scroll actually has overflow */
+  body[data-page="war"] .table-wrap table {
+    width: max-content;
+    min-width: 100%;
+  }
+  body[data-page="war"] td:first-child,
+  body[data-page="war"] th:first-child {
+    max-width: 30vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  body[data-page="war"] .name,
+  body[data-page="war"] .role {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }

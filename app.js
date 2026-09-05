@@ -142,7 +142,7 @@ function renderTable() {
       ${dayCell(m.d1)}${dayCell(m.d2)}${dayCell(m.d3)}${dayCell(m.d4)}
       ${daysCompactCell(m)}
       <td><span class="badge ${actionClass(m.action)}" title="${esc(m.action || 'OK')}">${esc(shortAction(m.action))}</span></td>
-      <td class="mono">${num(m.efficiency).toFixed(1)}</td>
+      <td class="col-eff mono">${num(m.efficiency).toFixed(1)}</td>
     </tr>`).join('');
 }
 
