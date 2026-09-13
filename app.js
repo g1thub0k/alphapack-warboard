@@ -20,6 +20,58 @@ function shortAction(action) {
   return a;
 }
 
+
+function isTruthyFlag(v) {
+  if (v === true || v === 1) return true;
+  const s = String(v ?? '').trim().toLowerCase();
+  return s === 'true' || s === 'yes' || s === '1' || s === 'checked';
+}
+
+function actionBadge(m) {
+  const full = (m.action || 'OK').trim() || 'OK';
+  const reason = (m.reason || '').trim();
+  const notified = isTruthyFlag(m.pendingNotice);
+  const parts = [];
+  if (reason) parts.push(`${full} — ${reason}`);
+  else if (full.toUpperCase() !== 'OK') parts.push(full);
+  if (notified) parts.push('Notified');
+  const tip = parts.join(' · ') || full;
+  const tipAttr = esc(tip);
+  const label = shortAction(full) + (notified ? ' · N' : '');
+  if (!reason && !notified) {
+    return `<span class="badge ${actionClass(full)}">${esc(shortAction(full))}</span>`;
+  }
+  // has-tip: hover on desktop, tap/click toggle on phones (see bindActionTips)
+  return `<span class="badge ${actionClass(full)} has-tip" tabindex="0" role="button" aria-expanded="false" title="${tipAttr}" data-tip="${tipAttr}">${esc(label)}</span>`;
+}
+
+function bindActionTips() {
+  const tbody = document.getElementById('tbody');
+  if (!tbody || tbody.dataset.tipsBound === '1') return;
+  tbody.dataset.tipsBound = '1';
+  tbody.addEventListener('click', (e) => {
+    const badge = e.target.closest('.badge.has-tip');
+    if (!badge) return;
+    e.preventDefault();
+    const open = badge.classList.contains('open');
+    tbody.querySelectorAll('.badge.has-tip.open').forEach((el) => {
+      el.classList.remove('open');
+      el.setAttribute('aria-expanded', 'false');
+    });
+    if (!open) {
+      badge.classList.add('open');
+      badge.setAttribute('aria-expanded', 'true');
+    }
+  });
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.badge.has-tip')) return;
+    tbody.querySelectorAll('.badge.has-tip.open').forEach((el) => {
+      el.classList.remove('open');
+      el.setAttribute('aria-expanded', 'false');
+    });
+  });
+}
+
 function actionClass(action) {
   const a = (action || '').toLowerCase();
   if (!a || a === 'ok') return 'ok';
@@ -62,12 +114,6 @@ function filtered() {
   if (state.page === 'risk') {
     rows = rows.filter(m => (m.action || '').toLowerCase() !== 'ok' && m.action);
   }
-  if (state.page === 'promotions') {
-    rows = rows.filter(m => /^promote|fast-track/i.test(m.action || ''));
-  }
-  if (state.page === 'demotions') {
-    rows = rows.filter(m => /demote|flag for removal/i.test(m.action || ''));
-  }
   const key = state.sortKey;
   const dir = state.sortDir === 'asc' ? 1 : -1;
   rows.sort((a, b) => {
@@ -80,13 +126,6 @@ function filtered() {
     return av.localeCompare(bv) * dir;
   });
   return rows;
-}
-
-function dayCell(v) {
-  const n = dayVal(v);
-  if (n == null) return `<td class="daycell days-wide ok mono">—</td>`;
-  if (n > 0) return `<td class="daycell days-wide miss mono">${n}</td>`;
-  return `<td class="daycell days-wide ok mono">0</td>`;
 }
 
 function dayChip(v) {
@@ -123,27 +162,30 @@ function renderTable() {
       </tr>`).join('');
     return;
   }
-  if (state.page === 'risk' || state.page === 'promotions' || state.page === 'demotions') {
+  if (state.page === 'risk') {
     tbody.innerHTML = rows.map(m => `
       <tr>
         <td><div class="name">${esc(m.name)}</div><div class="role">${esc(m.role)}</div></td>
-        <td><span class="badge ${actionClass(m.action)}">${esc(m.action || '—')}</span></td>
+        <td>${actionBadge(m)}</td>
         <td class="mono">${num(m.missed).toFixed(0)}</td>
         <td>${esc(m.reason || '—')}</td>
         <td class="mono">${num(m.efficiency).toFixed(1)}</td>
       </tr>`).join('');
+    bindActionTips();
     return;
   }
-  // war — desktop: Day 1–4 columns; portrait: one compact Days column
+  // war — compact war days + in-clan / all-time fame
   tbody.innerHTML = rows.map(m => `
     <tr>
       <td><div class="name">${esc(m.name)}</div><div class="role">${esc(m.role)}</div></td>
       <td class="mono">${num(m.missed).toFixed(0)}</td>
-      ${dayCell(m.d1)}${dayCell(m.d2)}${dayCell(m.d3)}${dayCell(m.d4)}
       ${daysCompactCell(m)}
-      <td><span class="badge ${actionClass(m.action)}" title="${esc(m.action || 'OK')}">${esc(shortAction(m.action))}</span></td>
+      <td>${actionBadge(m)}</td>
+      <td class="mono">${num(m.daysInClan).toFixed(0)}</td>
+      <td class="mono">${num(m.fame).toLocaleString()}</td>
       <td class="col-eff mono">${num(m.efficiency).toFixed(1)}</td>
     </tr>`).join('');
+  bindActionTips();
 }
 
 function esc(s) {
@@ -224,6 +266,7 @@ function sheetRowsToMembers(csvText) {
     lastWeek: get(cells, 'Last Week Summary'),
     fame: num(get(cells, 'All-Time Fame')),
     daysInClan: num(get(cells, 'Days in Clan')),
+    pendingNotice: get(cells, 'Pending Notice'),
   })).filter(m => m.name || m.tag);
 }
 
@@ -327,8 +370,7 @@ function applyMembers(members, label) {
   state.members = members;
   setUpdatedLabel(label);
   if (state.page === 'efficiency') { state.sortKey = 'efficiency'; state.sortDir = 'desc'; }
-  if (state.page === 'risk' || state.page === 'demotions') { state.sortKey = 'missed'; state.sortDir = 'desc'; }
-  if (state.page === 'promotions') { state.sortKey = 'name'; state.sortDir = 'asc'; }
+  if (state.page === 'risk') { state.sortKey = 'missed'; state.sortDir = 'desc'; }
   renderStats(state.members);
   renderTable();
   // War page only: if DailySummary hasn't painted yet, derive chips from Day 1–4 columns.

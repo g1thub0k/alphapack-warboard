@@ -126,17 +126,14 @@ tr:hover td { background: var(--row-hover); }
 .daycard .line .em { color: var(--good); font-weight: 700; font-variant-numeric: tabular-nums; }
 
 /* Compact Days column: phone only; desktop keeps Day 1–4 */
-.days-compact, .days-compact-h { display: none; }
 .days-compact .dchip { font-weight: 650; }
 .days-compact .dchip.ok { color: var(--muted); }
 .days-compact .dchip.miss { color: var(--bad); font-weight: 700; }
 .days-compact .dchip.mut { color: var(--muted); opacity: 0.75; }
 .days-compact .ddot { color: var(--border); margin: 0 3px; }
+.days-compact { white-space: nowrap; }
 @media (max-width: 800px) {
   .app { padding-left: 12px; padding-right: 12px; }
-  .days-wide { display: none !important; }
-  .days-compact, .days-compact-h { display: table-cell; }
-  .days-compact { min-width: 0; }
   /* Hide Eff on war portrait — frees width so Member/Missed/Days/Action fit */
   body[data-page="war"] .col-eff { display: none !important; }
   body[data-page="war"] th,
@@ -162,5 +159,48 @@ tr:hover td { background: var(--row-hover); }
   body[data-page="war"] .role {
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+}
+
+/* Reason tip: hover on desktop, tap (.open) on phones */
+td .badge.has-tip {
+  position: relative;
+  cursor: pointer;
+}
+td .badge.has-tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  width: max-content;
+  max-width: min(280px, 78vw);
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #0a0e14;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.75rem;
+  font-weight: 450;
+  line-height: 1.35;
+  white-space: normal;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity 0.12s ease;
+  z-index: 30;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+}
+td .badge.has-tip.open::after,
+td .badge.has-tip:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+}
+@media (hover: hover) and (pointer: fine) {
+  td .badge.has-tip:hover::after {
+    opacity: 1;
+    visibility: visible;
   }
 }
