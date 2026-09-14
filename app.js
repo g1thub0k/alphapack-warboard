@@ -13,13 +13,13 @@ function num(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; }
 function shortAction(action) {
   const a = (action || 'OK').trim();
   if (!a || a.toUpperCase() === 'OK') return 'OK';
-  if (/flag for removal/i.test(a)) return 'Flag';
-  if (/^demote to /i.test(a)) return 'Demote';
+  if (/^kick$/i.test(a)) return 'Kick';
+  if (/flag for removal/i.test(a)) return 'Kick';
+  if (/^demote/i.test(a)) return 'Demote';
   if (/^promote to /i.test(a)) return 'Promote';
   if (/fast-track/i.test(a)) return 'Fast-Track';
   return a;
 }
-
 
 function isTruthyFlag(v) {
   if (v === true || v === 1) return true;
@@ -27,22 +27,105 @@ function isTruthyFlag(v) {
   return s === 'true' || s === 'yes' || s === '1' || s === 'checked';
 }
 
-function actionBadge(m) {
-  const full = (m.action || 'OK').trim() || 'OK';
-  const reason = (m.reason || '').trim();
+/** Script Status (Yellow / Orange1–3 / Demote / Kick / OK), else legacy Suggested Action. Never invent from Eff/Fame. */
+function resolveStatus(m) {
+  const raw = String(m.status ?? '').trim();
+  if (/^(OK|Yellow|Orange[1-3]|Demote|Kick)$/i.test(raw)) {
+    if (/^OK$/i.test(raw)) {
+      // fall through to legacy promote/demote labels if Status is only OK
+    } else {
+      return raw.replace(/^orange/i, 'Orange').replace(/^yellow$/i, 'Yellow')
+        .replace(/^demote$/i, 'Demote').replace(/^kick$/i, 'Kick');
+    }
+  }
+  const a = String(m.action ?? '').trim();
+  if (!a || a.toUpperCase() === 'OK') return 'OK';
+  if (/^kick$/i.test(a) || /flag for removal/i.test(a)) return 'Kick';
+  if (/^demote/i.test(a)) return 'Demote';
+  // Keep legacy promote chips until Status carries them
+  return a;
+}
+
+function isAtRiskMember(m) {
+  const s = resolveStatus(m);
+  if (/^(Yellow|Orange[1-3]|Demote|Kick)$/i.test(s)) return true;
+  const a = String(m.action ?? '').trim().toLowerCase();
+  return a && a !== 'ok' && (a.includes('demote') || a.includes('kick') || a.includes('removal') || a.includes('flag'));
+}
+
+function tipParts(m, status) {
+  const reason = String(m.statusReason || m.reason || '').trim();
+  const roleAfter = String(m.roleAfter || '').trim();
   const notified = isTruthyFlag(m.pendingNotice);
   const parts = [];
-  if (reason) parts.push(`${full} — ${reason}`);
-  else if (full.toUpperCase() !== 'OK') parts.push(full);
+  if (/^Yellow$/i.test(status)) parts.push('Yellow');
+  else if (/^Orange([1-3])$/i.test(status)) parts.push(`Orange ${RegExp.$1}`);
+  else if (/^Demote$/i.test(status)) {
+    parts.push(roleAfter ? `Demote → ${roleAfter}` : 'Demote');
+  } else if (/^Kick$/i.test(status)) parts.push('Kick');
+  else if (status && status !== 'OK') parts.push(status);
+  if (reason) parts.push(reason);
   if (notified) parts.push('Notified');
-  const tip = parts.join(' · ') || full;
+  return parts.join(' · ') || status || 'OK';
+}
+
+function wrapTip(inner, tip, extraClass = '') {
   const tipAttr = esc(tip);
-  const label = shortAction(full) + (notified ? ' · N' : '');
-  if (!reason && !notified) {
-    return `<span class="badge ${actionClass(full)}">${esc(shortAction(full))}</span>`;
+  if (!tip || tip === 'OK') {
+    return `<span class="${extraClass}">${inner}</span>`;
   }
-  // has-tip: hover on desktop, tap/click toggle on phones (see bindActionTips)
-  return `<span class="badge ${actionClass(full)} has-tip" tabindex="0" role="button" aria-expanded="false" title="${tipAttr}" data-tip="${tipAttr}">${esc(label)}</span>`;
+  return `<span class="has-tip ${extraClass}" tabindex="0" role="button" aria-expanded="false" title="${tipAttr}" data-tip="${tipAttr}">${inner}</span>`;
+}
+
+function cardTiles(kind, count, tipLabel) {
+  const n = Math.max(1, Math.min(3, count));
+  const tiles = Array.from({ length: n }, () => `<span class="card-tile ${kind}"></span>`).join('');
+  return wrapTip(`<span class="action-cards">${tiles}</span>`, tipLabel);
+}
+
+function actionBadge(m) {
+  const status = resolveStatus(m);
+  const tip = tipParts(m, status);
+  const notified = isTruthyFlag(m.pendingNotice);
+
+  const orange = status.match(/^Orange([1-3])$/i);
+  if (orange) {
+    // Yellow beats orange is script-side; we never render both.
+    return cardTiles('orange', parseInt(orange[1], 10), tip);
+  }
+  if (/^Yellow$/i.test(status)) {
+    return cardTiles('yellow', 1, tip);
+  }
+  if (/^Kick$/i.test(status)) {
+    const label = 'Kick' + (notified ? ' · N' : '');
+    return wrapTip(`<span class="badge bad">${esc(label)}</span>`, tip, '');
+  }
+  if (/^Demote$/i.test(status)) {
+    const roleAfter = String(m.roleAfter || '').trim();
+    let label = 'Demote';
+    if (roleAfter) {
+      // Compact role path when script sends Role After
+      const ra = roleAfter.replace(/\s*→\s*/g, '→').replace(/\s*->\s*/g, '→');
+      label = `Demote`;
+      // optional path shown only in tip; keep tile clean per spec
+    }
+    if (notified) label += ' · N';
+    return wrapTip(`<span class="badge bad">${esc(label)}</span>`, tip, '');
+  }
+
+  // Legacy / OK / Promote
+  const full = status === 'OK' ? (String(m.action || 'OK').trim() || 'OK') : status;
+  if (!full || full.toUpperCase() === 'OK') {
+    const label = 'OK' + (notified ? ' · N' : '');
+    if (notified) return wrapTip(`<span class="badge ok">${esc(label)}</span>`, tip, '');
+    return `<span class="badge ok">OK</span>`;
+  }
+  const label = shortAction(full) + (notified ? ' · N' : '');
+  const cls = actionClass(full);
+  if (tip && tip !== full && tip !== 'OK') {
+    return wrapTip(`<span class="badge ${cls}">${esc(label)}</span>`, tip, '');
+  }
+  return `<span class="badge ${cls}">${esc(label)}</span>`;
 }
 
 function bindActionTips() {
@@ -50,11 +133,11 @@ function bindActionTips() {
   if (!tbody || tbody.dataset.tipsBound === '1') return;
   tbody.dataset.tipsBound = '1';
   tbody.addEventListener('click', (e) => {
-    const badge = e.target.closest('.badge.has-tip');
+    const badge = e.target.closest('.has-tip');
     if (!badge) return;
     e.preventDefault();
     const open = badge.classList.contains('open');
-    tbody.querySelectorAll('.badge.has-tip.open').forEach((el) => {
+    tbody.querySelectorAll('.has-tip.open').forEach((el) => {
       el.classList.remove('open');
       el.setAttribute('aria-expanded', 'false');
     });
@@ -64,8 +147,8 @@ function bindActionTips() {
     }
   });
   document.addEventListener('click', (e) => {
-    if (e.target.closest('.badge.has-tip')) return;
-    tbody.querySelectorAll('.badge.has-tip.open').forEach((el) => {
+    if (e.target.closest('.has-tip')) return;
+    tbody.querySelectorAll('.has-tip.open').forEach((el) => {
       el.classList.remove('open');
       el.setAttribute('aria-expanded', 'false');
     });
@@ -87,7 +170,7 @@ function dayVal(v) {
 }
 
 function renderStats(members) {
-  const atRisk = members.filter(m => (m.action || '').toLowerCase() !== 'ok' && m.action).length;
+  const atRisk = members.filter(isAtRiskMember).length;
   const missed = members.filter(m => num(m.missed) > 0).length;
   const avgEff = members.length
     ? (members.reduce((s, m) => s + num(m.efficiency), 0) / members.length)
@@ -107,12 +190,12 @@ function filtered() {
   const q = state.q.trim().toLowerCase();
   if (q) rows = rows.filter(m => (m.name || '').toLowerCase().includes(q) || (m.tag || '').toLowerCase().includes(q));
   if (state.filter === 'missed') rows = rows.filter(m => num(m.missed) > 0);
-  if (state.filter === 'risk') rows = rows.filter(m => (m.action || '').toLowerCase() !== 'ok' && m.action);
+  if (state.filter === 'risk') rows = rows.filter(isAtRiskMember);
   if (state.page === 'efficiency') {
     // keep all after search/filter
   }
   if (state.page === 'risk') {
-    rows = rows.filter(m => (m.action || '').toLowerCase() !== 'ok' && m.action);
+    rows = rows.filter(isAtRiskMember);
   }
   const key = state.sortKey;
   const dir = state.sortDir === 'asc' ? 1 : -1;
@@ -243,9 +326,14 @@ function sheetRowsToMembers(csvText) {
   const grid = parseCsv(csvText);
   if (grid.length < 2) return [];
   const headers = grid[0].map(h => String(h).trim());
-  const idx = (name) => headers.indexOf(name);
+  // Last index wins — Sheet has a legacy empty "Status" (col H) and the card Status (AE).
+  const idxLast = (name) => {
+    let found = -1;
+    for (let i = 0; i < headers.length; i++) if (headers[i] === name) found = i;
+    return found;
+  };
   const get = (cells, name) => {
-    const i = idx(name);
+    const i = idxLast(name);
     return i >= 0 ? String(cells[i] ?? '').trim() : '';
   };
   return grid.slice(1).map(cells => ({
@@ -259,6 +347,9 @@ function sheetRowsToMembers(csvText) {
     d4: get(cells, 'Day 4 Missed'),
     action: get(cells, 'Suggested Action'),
     reason: get(cells, 'Reason'),
+    status: get(cells, 'Status'),
+    statusReason: get(cells, 'Status Reason'),
+    roleAfter: get(cells, 'Role After'),
     efficiency: num(get(cells, 'Attack Efficiency')),
     contribution: num(get(cells, 'Contribution Score')),
     rank: num(get(cells, 'Contribution Rank')),

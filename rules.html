@@ -9,17 +9,68 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@450;560;700&family=JetBrains+Mono:wght@450;650&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <style>
-    .rules { max-width: 720px; }
-    .rules h2 { font-size: 1.05rem; margin: 1.4rem 0 0.55rem; }
-    .rules p, .rules li { color: var(--text); line-height: 1.55; font-size: 0.95rem; }
-    .rules .lead { color: var(--muted); margin-top: 0.35rem; }
-    .rules ul { padding-left: 1.15rem; margin: 0.4rem 0 0.8rem; }
-    .rules li { margin: 0.45rem 0; }
-    .rules strong { font-weight: 650; }
+    .rules { max-width: 760px; }
     .rules .card-pad { padding: 20px 22px 28px; }
-    .tag-good { color: var(--good); }
-    .tag-bad { color: var(--bad); }
-    .tag-warn { color: var(--warn); }
+    .rules h1.page { margin: 0; font-size: 1.25rem; }
+    .rules .lead { color: var(--muted); margin: 0.4rem 0 0; line-height: 1.55; font-size: 0.95rem; }
+    .rules h2 { font-size: 1.02rem; margin: 1.55rem 0 0.5rem; }
+    .rules p, .rules li { color: var(--text); line-height: 1.55; font-size: 0.95rem; }
+    .rules p { margin: 0.4rem 0 0.65rem; }
+    .rules ul { padding-left: 1.15rem; margin: 0.35rem 0 0.7rem; }
+    .rules li { margin: 0.4rem 0; }
+    .rules strong { font-weight: 650; }
+    .rules .muted { color: var(--muted); }
+    .rules table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 0.45rem 0 0.9rem; }
+    .rules th, .rules td { text-align: left; padding: 0.5rem 0.55rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .rules th { color: var(--muted); font-weight: 560; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .rules .example {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.5;
+      margin: 0.45rem 0 0.8rem;
+    }
+    .defs { display: grid; gap: 8px; margin: 0.65rem 0 0.5rem; }
+    @media (min-width: 620px) { .defs { grid-template-columns: 1fr 1fr; } }
+    .def {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .def dt {
+      font-size: 0.72rem;
+      font-weight: 650;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 0.25rem;
+    }
+    .def dd { margin: 0; font-size: 0.88rem; line-height: 1.45; color: var(--text); }
+    .tile {
+      display: inline-block;
+      width: 14px;
+      height: 20px;
+      border-radius: 3px;
+      vertical-align: -4px;
+      margin-right: 3px;
+    }
+    .tile-y { background: var(--warn); }
+    .tile-o { background: #ff9f43; }
+    .when { display: flex; flex-wrap: wrap; gap: 8px; margin: 0.5rem 0 0.2rem; }
+    .when span {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 0.84rem;
+      color: var(--muted);
+      flex: 1 1 180px;
+    }
+    .when strong { color: var(--text); display: block; font-size: 0.8rem; margin-bottom: 0.15rem; }
   </style>
 </head>
 <body data-page="rules">
@@ -29,43 +80,141 @@
         <h1>Alpha Pack ClanData</h1>
         <div class="sub">Clan rules</div>
       </div>
-            <nav class="nav">
+      <nav class="nav">
         <a href="index.html">War status</a>
         <a href="efficiency.html">Attack efficiency</a>
         <a href="risk.html">At risk</a>
-<a href="rules.html" class="active">Rules</a>
+        <a href="rules.html" class="active">Rules</a>
       </nav>
     </header>
+
     <div class="card rules">
       <div class="card-pad">
-        <h1 style="margin:0;font-size:1.25rem;">Clan promotion &amp; demotion rules</h1>
-        <p class="lead">Our role system runs on an automated tracker that checks everyone’s war performance every week. Here’s exactly how it works, so there are no surprises.</p>
+        <h1 class="page">Clan rules</h1>
+        <p class="lead">Fifty people. Four decks. Every war day. The Action column is the referee: yellow tile, orange tiles, or green OK.</p>
 
-        <h2 class="tag-good">Promotions</h2>
+        <h2>How to read a week</h2>
+        <dl class="defs">
+          <div class="def">
+            <dt>16/16</dt>
+            <dd>All four decks, Thursday through Sunday. Needed for the eight-week streak.</dd>
+          </div>
+          <div class="def">
+            <dt>Blank day</dt>
+            <dd>Zero decks on a day that already ended. Leftover decks are not a blank day.</dd>
+          </div>
+          <div class="def">
+            <dt>0/4</dt>
+            <dd>No attacks on all four war days.</dd>
+          </div>
+          <div class="def">
+            <dt>Notice</dt>
+            <dd>Tell us before or during the week. We tick Pending Notice. That whole week is excused. One notice every four weeks.</dd>
+          </div>
+        </dl>
+        <p class="muted">A noticed week is not 16/16. It cannot be orange, yellow, or a kick for missed days.</p>
+
+        <h2>What you see under Action</h2>
+        <p>
+          <span class="tile tile-y" title="Yellow"></span> missed days &nbsp;
+          <span class="tile tile-o" title="Orange"></span>
+          <span class="tile tile-o" title="Orange"></span> showed up every day, fame too low &nbsp;
+          <span class="badge ok">OK</span> clean &nbsp;
+          <span class="badge bad">Demote</span> drop one role &nbsp;
+          <span class="badge bad">Kick</span> seat is free
+        </p>
+        <p class="muted">No words on the tiles. Two orange tiles means two orange weeks. Yellow and orange never sit together — yellow wins. No red card.</p>
+
+        <h2>Yellow — missed days</h2>
+        <p>Elders and co-leaders. One yellow tile. Role stays when it is issued.</p>
+        <table>
+          <thead>
+            <tr><th>What happened</th><th>Result</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Two blank days, no notice</td>
+              <td>Yellow when the second day ends (usually Saturday)</td>
+            </tr>
+            <tr>
+              <td>One blank day and under the fame floor</td>
+              <td>Yellow Monday. Floor is 2,500 co-leader / 2,200 elder</td>
+            </tr>
+            <tr>
+              <td>One blank day, fame at or over the floor</td>
+              <td>No yellow. If you have oranges, one comes off</td>
+            </tr>
+            <tr>
+              <td>Full 0/4 after eight straight 16/16 weeks</td>
+              <td>Yellow Monday — the streak protects the role once</td>
+            </tr>
+            <tr>
+              <td>Full 0/4 with fewer than eight 16/16 weeks</td>
+              <td><span class="badge bad">Demote</span> Monday (or Kick if you are a member)</td>
+            </tr>
+            <tr>
+              <td>Already yellow, then two blank days</td>
+              <td><span class="badge bad">Demote</span> when the second day ends</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>Co-leader drops to elder. Elder drops to member. Two straight <strong>16/16</strong> weeks clear Yellow. That week does not also take an orange off.</p>
+        <p class="muted">15/16, 14/16, 13/16 are not yellow if you played every day. 12/16 is yellow only when one of those days was actually zero — unless fame is under the floor, in which case one blank day is yellow anyway.</p>
+
+        <h2>Orange — every day played, fame too low</h2>
+        <p>Elders and co-leaders. No blank day, and fame under the floor.</p>
+        <table>
+          <thead>
+            <tr><th>Week</th><th>Under 2,500 co / 2,200 elder</th><th>At or over the floor</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>16/16 or 15/16 / 14/16 / 12/16 with every day touched</td>
+              <td>Add one orange tile (max three, then Demote)</td>
+              <td>Take one orange off. At zero → <span class="badge ok">OK</span></td>
+            </tr>
+            <tr>
+              <td>One blank day</td>
+              <td>Yellow, not orange. Oranges freeze</td>
+              <td>No yellow. Take one orange off</td>
+            </tr>
+            <tr>
+              <td>Already yellow this week</td>
+              <td colspan="2">Oranges freeze. No add, no wipe</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>Three orange weeks, then <span class="badge bad">Demote</span> Monday. One good week knocks off one tile — never the whole stack.</p>
+        <p class="example">Example: two orange tiles, then a 14/16 at 2,600 → one tile left. Next week 16/16 at 2,700 → green OK.</p>
+
+        <h2>Kick — the seat is free</h2>
+        <p>New members and members (not elder / co-leader):</p>
         <ul>
-          <li><strong>Member → Elder:</strong> Complete all 16/16 war attacks over a full 4-week season, <strong>and</strong> average at least 2,000 Fame each of those weeks.</li>
-          <li><strong>Member → Elder (performance boost — new members only):</strong> If you average 800+ medals/day (or 3,200+/week) in war for 2 straight weeks as a new member, you can fast-track to Elder in just 2 weeks instead of 4.</li>
-          <li><strong>Elder → Co-Leader:</strong> 3+ months in the clan, <strong>and</strong> averaging 700+ medals per war day over the last 4-week season.</li>
+          <li>Two blank days, no notice → out when the second day ends (usually Saturday)</li>
+          <li>A full 0/4 week, no notice → out Monday</li>
+        </ul>
+        <p>Elders and co-leaders are not kicked on the first collapse. They drop a role first. After elder → member, the kick rule applies.</p>
+        <p class="muted">Eight straight 16/16 weeks is what turns one 0/4 into a yellow. Contribution total and months in the clan do not.</p>
+
+        <h2>Promotions</h2>
+        <p class="muted">Monday only. No promotion the same week you are demoted or kicked.</p>
+        <ul>
+          <li><strong>Member → Elder:</strong> 16/16 each week for four straight weeks, and at least 2,000 fame each of those weeks.</li>
+          <li><strong>Fast track</strong> (first two weeks in the clan only): two straight weeks of 16/16 and 3,200 fame each week.</li>
+          <li><strong>Elder → Co-leader:</strong> 3+ months in the clan, and averaging 700+ medals per war day over the last 4-week season.</li>
         </ul>
 
-        <h2 class="tag-bad">Demotions</h2>
-        <ul>
-          <li><strong>Co-Leader → Elder:</strong> Missing 3 or more war attacks <strong>and</strong> falling below 2,500 Fame in that same week, with no advance notice.</li>
-          <li><strong>Elder → Member:</strong> Missing 3 or more war attacks <strong>and</strong> falling below 2,200 Fame that week, no advance notice — <strong>or</strong> landing in the bottom 10% of the clan in weekly medals <strong>and</strong> falling below the 2,200 Fame floor that week.</li>
-        </ul>
+        <h2>When the board updates</h2>
+        <div class="when">
+          <span><strong>Saturday / Sunday</strong> Blank-day yellows, mid-week demotes, kicks. Days not started yet are not misses.</span>
+          <span><strong>Monday</strong> Fame, orange add/wipe, 0/4, promotions.</span>
+        </div>
 
-        <h2 class="tag-warn">Member removal flag</h2>
-        <p>Missing all 16 war attacks in a week (the entire week) with no advance notice will flag you for removal from the clan. One missed week happens — just give us a heads up beforehand.</p>
-
-        <h2>The notice rule</h2>
-        <p>Life happens — work, school, travel. If you let us know <em>beforehand</em> that you’ll miss attacks, it won’t count against you. But: <strong>only 1 notice is honored per rolling 4 weeks.</strong> If you need an excuse most weeks, it stops counting as an exception — so use it when you really need it.</p>
-
-        <h2>Why all this?</h2>
-        <p>We’re pushing from Legendary 2 to Legendary 1. That takes consistency from everyone. These rules are the same for every member, checked automatically and fairly every week — no favorites, no guessing.</p>
-        <p class="lead">Questions? Ask leadership anytime.</p>
+        <h2>Why</h2>
+        <p>World ranking needs a full boat every day. Same rules for everyone. The tracker decides; this page is how to read it.</p>
       </div>
     </div>
-    <p class="foot">Same rules as Softr — display only.</p>
+    <p class="foot">Action tiles match the war board. The script is the authority.</p>
   </div>
 </body>
 </html>

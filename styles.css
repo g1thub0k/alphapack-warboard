@@ -163,11 +163,11 @@ tr:hover td { background: var(--row-hover); }
 }
 
 /* Reason tip: hover on desktop, tap (.open) on phones */
-td .badge.has-tip {
+.has-tip {
   position: relative;
   cursor: pointer;
 }
-td .badge.has-tip::after {
+.has-tip::after {
   content: attr(data-tip);
   position: absolute;
   left: 0;
@@ -193,14 +193,39 @@ td .badge.has-tip::after {
   z-index: 30;
   box-shadow: 0 8px 24px rgba(0,0,0,0.45);
 }
-td .badge.has-tip.open::after,
-td .badge.has-tip:focus-visible::after {
+.has-tip.open::after,
+.has-tip:focus-visible::after {
   opacity: 1;
   visibility: visible;
 }
 @media (hover: hover) and (pointer: fine) {
-  td .badge.has-tip:hover::after {
+  .has-tip:hover::after {
     opacity: 1;
     visibility: visible;
   }
+}
+
+/* Soccer cards in Action column */
+.action-cards {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
+  min-height: 28px;
+}
+.card-tile {
+  width: 14px;
+  height: 20px;
+  border-radius: 3px;
+  flex: 0 0 auto;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.25);
+}
+.card-tile.yellow { background: var(--warn); }
+.card-tile.orange { background: #ff9f43; }
+.has-tip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  vertical-align: middle;
 }
