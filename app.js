@@ -347,7 +347,7 @@ function sheetRowsToMembers(csvText) {
     d4: get(cells, 'Day 4 Missed'),
     action: get(cells, 'Suggested Action'),
     reason: get(cells, 'Reason'),
-    status: get(cells, 'Status'),
+    status: get(cells, 'Card Status') || get(cells, 'Status'),
     statusReason: get(cells, 'Status Reason'),
     roleAfter: get(cells, 'Role After'),
     efficiency: num(get(cells, 'Attack Efficiency')),
@@ -429,11 +429,12 @@ function renderDayCards(cards) {
   const list = cards && cards.length ? cards : defaultDayCards();
   el.innerHTML = list.map(c => {
     const cls = c.empty ? 'daycard empty' : 'daycard live';
+    // Day label is already in .day — don't repeat "Thu:" in the body line
     let line;
     if (c.empty) {
-      line = `${esc(c.label)}: —`;
+      line = '—';
     } else {
-      line = `${esc(c.label)}: <span class="em">${c.perfect}</span> perfect attacks out of ${c.total} members`;
+      line = `<span class="em">${c.perfect}</span> perfect attacks out of ${c.total} members`;
     }
     return `<div class="${cls}"><div class="day">${esc(c.label)}</div><div class="line">${line}</div></div>`;
   }).join('');
