@@ -235,3 +235,6 @@ tr:hover td { background: var(--row-hover); }
   cursor: pointer;
   vertical-align: middle;
 }
+
+/* Space yellow vs orange when both show (Yellow+OrangeN) */
+.action-cards .card-tile.yellow + .card-tile.orange { margin-left: 2px; }

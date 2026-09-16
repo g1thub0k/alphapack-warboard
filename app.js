@@ -27,105 +27,94 @@ function isTruthyFlag(v) {
   return s === 'true' || s === 'yes' || s === '1' || s === 'checked';
 }
 
-/** Script Status (Yellow / Orange1–3 / Demote / Kick / OK), else legacy Suggested Action. Never invent from Eff/Fame. */
-function resolveStatus(m) {
-  const raw = String(m.status ?? '').trim();
-  if (/^(OK|Yellow|Orange[1-3]|Demote|Kick)$/i.test(raw)) {
-    if (/^OK$/i.test(raw)) {
-      // fall through to legacy promote/demote labels if Status is only OK
-    } else {
-      return raw.replace(/^orange/i, 'Orange').replace(/^yellow$/i, 'Yellow')
-        .replace(/^demote$/i, 'Demote').replace(/^kick$/i, 'Kick');
-    }
-  }
-  const a = String(m.action ?? '').trim();
-  if (!a || a.toUpperCase() === 'OK') return 'OK';
-  if (/^kick$/i.test(a) || /flag for removal/i.test(a)) return 'Kick';
-  if (/^demote/i.test(a)) return 'Demote';
-  // Keep legacy promote chips until Status carries them
-  return a;
+/** Card Status from script only — never invent from Eff/Fame. Supports Yellow+OrangeN. */
+function parseCardStatus(raw) {
+  const s = String(raw ?? '').trim();
+  if (!s) return { kind: 'empty' };
+  if (/^OK$/i.test(s)) return { kind: 'ok' };
+  if (/^Kick$/i.test(s)) return { kind: 'kick' };
+  if (/^Demote$/i.test(s)) return { kind: 'demote' };
+  const compound = s.match(/^Yellow\s*\+\s*Orange([1-3])$/i);
+  if (compound) return { kind: 'compound', orange: parseInt(compound[1], 10) };
+  if (/^Yellow$/i.test(s)) return { kind: 'yellow' };
+  const orange = s.match(/^Orange([1-3])$/i);
+  if (orange) return { kind: 'orange', orange: parseInt(orange[1], 10) };
+  return { kind: 'unknown', raw: s };
 }
 
 function isAtRiskMember(m) {
-  const s = resolveStatus(m);
-  if (/^(Yellow|Orange[1-3]|Demote|Kick)$/i.test(s)) return true;
-  const a = String(m.action ?? '').trim().toLowerCase();
-  return a && a !== 'ok' && (a.includes('demote') || a.includes('kick') || a.includes('removal') || a.includes('flag'));
+  // Prefer flags — catches Yellow+Orange2 without exact-match bugs
+  if (isTruthyFlag(m.yellowActive)) return true;
+  if (num(m.orangeStreak) > 0) return true;
+  const s = String(m.status ?? '').trim();
+  if (/Kick|Demote|Yellow|Orange/i.test(s)) return true;
+  // Demotions/kicks no longer live in Suggested Action — ignore it here
+  return false;
 }
 
-function tipParts(m, status) {
-  const reason = String(m.statusReason || m.reason || '').trim();
+function tipParts(m, parsed) {
+  const reason = String(m.statusReason || '').trim();
   const roleAfter = String(m.roleAfter || '').trim();
   const notified = isTruthyFlag(m.pendingNotice);
   const parts = [];
-  if (/^Yellow$/i.test(status)) parts.push('Yellow');
-  else if (/^Orange([1-3])$/i.test(status)) parts.push(`Orange ${RegExp.$1}`);
-  else if (/^Demote$/i.test(status)) {
-    parts.push(roleAfter ? `Demote → ${roleAfter}` : 'Demote');
-  } else if (/^Kick$/i.test(status)) parts.push('Kick');
-  else if (status && status !== 'OK') parts.push(status);
+  if (parsed.kind === 'yellow') parts.push('Yellow');
+  else if (parsed.kind === 'orange') parts.push(`Orange ${parsed.orange}`);
+  else if (parsed.kind === 'compound') parts.push(`Yellow + Orange ${parsed.orange}`);
+  else if (parsed.kind === 'demote') parts.push(roleAfter ? `Demote → ${roleAfter}` : 'Demote');
+  else if (parsed.kind === 'kick') parts.push('Kick');
+  else if (parsed.kind === 'unknown') parts.push(parsed.raw);
   if (reason) parts.push(reason);
   if (notified) parts.push('Notified');
-  return parts.join(' · ') || status || 'OK';
+  return parts.join(' · ') || 'OK';
 }
 
-function wrapTip(inner, tip, extraClass = '') {
+function wrapTip(inner, tip) {
   const tipAttr = esc(tip);
-  if (!tip || tip === 'OK') {
-    return `<span class="${extraClass}">${inner}</span>`;
-  }
-  return `<span class="has-tip ${extraClass}" tabindex="0" role="button" aria-expanded="false" title="${tipAttr}" data-tip="${tipAttr}">${inner}</span>`;
+  if (!tip || tip === 'OK') return inner;
+  return `<span class="has-tip" tabindex="0" role="button" aria-expanded="false" title="${tipAttr}" data-tip="${tipAttr}">${inner}</span>`;
 }
 
-function cardTiles(kind, count, tipLabel) {
+function tilesHtml(kind, count) {
   const n = Math.max(1, Math.min(3, count));
-  const tiles = Array.from({ length: n }, () => `<span class="card-tile ${kind}"></span>`).join('');
-  return wrapTip(`<span class="action-cards">${tiles}</span>`, tipLabel);
+  return Array.from({ length: n }, () => `<span class="card-tile ${kind}"></span>`).join('');
 }
 
 function actionBadge(m) {
-  const status = resolveStatus(m);
-  const tip = tipParts(m, status);
+  const parsed = parseCardStatus(m.status);
+  const tip = tipParts(m, parsed);
   const notified = isTruthyFlag(m.pendingNotice);
 
-  const orange = status.match(/^Orange([1-3])$/i);
-  if (orange) {
-    // Yellow beats orange is script-side; we never render both.
-    return cardTiles('orange', parseInt(orange[1], 10), tip);
+  if (parsed.kind === 'compound') {
+    const inner = `<span class="action-cards">${tilesHtml('yellow', 1)}${tilesHtml('orange', parsed.orange)}</span>`;
+    return wrapTip(inner, tip);
   }
-  if (/^Yellow$/i.test(status)) {
-    return cardTiles('yellow', 1, tip);
+  if (parsed.kind === 'orange') {
+    return wrapTip(`<span class="action-cards">${tilesHtml('orange', parsed.orange)}</span>`, tip);
   }
-  if (/^Kick$/i.test(status)) {
+  if (parsed.kind === 'yellow') {
+    return wrapTip(`<span class="action-cards">${tilesHtml('yellow', 1)}</span>`, tip);
+  }
+  if (parsed.kind === 'kick') {
     const label = 'Kick' + (notified ? ' · N' : '');
-    return wrapTip(`<span class="badge bad">${esc(label)}</span>`, tip, '');
+    return wrapTip(`<span class="badge bad">${esc(label)}</span>`, tip);
   }
-  if (/^Demote$/i.test(status)) {
-    const roleAfter = String(m.roleAfter || '').trim();
-    let label = 'Demote';
-    if (roleAfter) {
-      // Compact role path when script sends Role After
-      const ra = roleAfter.replace(/\s*→\s*/g, '→').replace(/\s*->\s*/g, '→');
-      label = `Demote`;
-      // optional path shown only in tip; keep tile clean per spec
-    }
-    if (notified) label += ' · N';
-    return wrapTip(`<span class="badge bad">${esc(label)}</span>`, tip, '');
+  if (parsed.kind === 'demote') {
+    const label = 'Demote' + (notified ? ' · N' : '');
+    return wrapTip(`<span class="badge bad">${esc(label)}</span>`, tip);
   }
 
-  // Legacy / OK / Promote
-  const full = status === 'OK' ? (String(m.action || 'OK').trim() || 'OK') : status;
-  if (!full || full.toUpperCase() === 'OK') {
-    const label = 'OK' + (notified ? ' · N' : '');
-    if (notified) return wrapTip(`<span class="badge ok">${esc(label)}</span>`, tip, '');
-    return `<span class="badge ok">OK</span>`;
+  // Card Status OK/empty: promotions live only in Suggested Action now
+  const promo = String(m.action ?? '').trim();
+  if (promo && !/^OK$/i.test(promo) && /promote|fast-track/i.test(promo)) {
+    const promoTip = [shortAction(promo), String(m.reason || '').trim(), notified ? 'Notified' : '']
+      .filter(Boolean).join(' · ');
+    const label = shortAction(promo) + (notified ? ' · N' : '');
+    return wrapTip(`<span class="badge ${actionClass(promo)}">${esc(label)}</span>`, promoTip || promo);
   }
-  const label = shortAction(full) + (notified ? ' · N' : '');
-  const cls = actionClass(full);
-  if (tip && tip !== full && tip !== 'OK') {
-    return wrapTip(`<span class="badge ${cls}">${esc(label)}</span>`, tip, '');
-  }
-  return `<span class="badge ${cls}">${esc(label)}</span>`;
+
+  const label = 'OK' + (notified ? ' · N' : '');
+  if (notified) return wrapTip(`<span class="badge ok">${esc(label)}</span>`, 'Notified');
+  return `<span class="badge ok">OK</span>`;
 }
 
 function bindActionTips() {
@@ -326,14 +315,13 @@ function sheetRowsToMembers(csvText) {
   const grid = parseCsv(csvText);
   if (grid.length < 2) return [];
   const headers = grid[0].map(h => String(h).trim());
-  // Last index wins — Sheet has a legacy empty "Status" (col H) and the card Status (AE).
-  const idxLast = (name) => {
-    let found = -1;
-    for (let i = 0; i < headers.length; i++) if (headers[i] === name) found = i;
-    return found;
-  };
+  // Card Status only — never fall back to legacy "Status" (quietly wrong cards).
+  if (headers.indexOf('Card Status') < 0) {
+    throw new Error('Missing required column: Card Status');
+  }
+  const idx = (name) => headers.indexOf(name);
   const get = (cells, name) => {
-    const i = idxLast(name);
+    const i = idx(name);
     return i >= 0 ? String(cells[i] ?? '').trim() : '';
   };
   return grid.slice(1).map(cells => ({
@@ -347,9 +335,13 @@ function sheetRowsToMembers(csvText) {
     d4: get(cells, 'Day 4 Missed'),
     action: get(cells, 'Suggested Action'),
     reason: get(cells, 'Reason'),
-    status: get(cells, 'Card Status') || get(cells, 'Status'),
+    status: get(cells, 'Card Status'),
     statusReason: get(cells, 'Status Reason'),
     roleAfter: get(cells, 'Role After'),
+    yellowActive: get(cells, 'Yellow Active'),
+    yellowCleanStreak: num(get(cells, 'Yellow Clean Streak')),
+    streakWeeks: num(get(cells, 'Streak Weeks')),
+    orangeStreak: num(get(cells, 'Orange Streak')),
     efficiency: num(get(cells, 'Attack Efficiency')),
     contribution: num(get(cells, 'Contribution Score')),
     rank: num(get(cells, 'Contribution Rank')),
@@ -503,6 +495,17 @@ async function boot() {
   }
 
   const sheetPromise = loadLiveSheet().catch(async (err) => {
+    const msg = String(err && err.message ? err.message : err);
+    // Missing Card Status: fail loudly — never read another column or hide behind cache.
+    if (msg.includes('Card Status')) {
+      console.error(err);
+      if (empty) {
+        empty.hidden = false;
+        empty.textContent = 'Data unavailable — Sheet is missing the Card Status column.';
+      }
+      setUpdatedLabel('Data unavailable');
+      return;
+    }
     console.warn('Live Sheet failed, falling back to cached JSON', err);
     try {
       await loadFallbackJson();
@@ -510,7 +513,7 @@ async function boot() {
       console.error(err2);
       if (empty) {
         empty.hidden = false;
-        empty.textContent = 'Could not load live Sheet or cached data.';
+        empty.textContent = 'Data unavailable — could not load live Sheet or cached data.';
       }
       setUpdatedLabel('Data unavailable');
     }
