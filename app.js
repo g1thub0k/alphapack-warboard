@@ -183,9 +183,6 @@ function filtered() {
   if (state.page === 'efficiency') {
     // keep all after search/filter
   }
-  if (state.page === 'risk') {
-    rows = rows.filter(isAtRiskMember);
-  }
   const key = state.sortKey;
   const dir = state.sortDir === 'asc' ? 1 : -1;
   rows.sort((a, b) => {
@@ -232,18 +229,6 @@ function renderTable() {
         <td class="mono">${esc(m.thisWeek)}</td>
         <td class="mono">${esc(m.lastWeek)}</td>
       </tr>`).join('');
-    return;
-  }
-  if (state.page === 'risk') {
-    tbody.innerHTML = rows.map(m => `
-      <tr>
-        <td><div class="name">${esc(m.name)}</div><div class="role">${esc(m.role)}</div></td>
-        <td>${actionBadge(m)}</td>
-        <td class="mono">${num(m.missed).toFixed(0)}</td>
-        <td>${esc(m.reason || '—')}</td>
-        <td class="mono">${num(m.efficiency).toFixed(1)}</td>
-      </tr>`).join('');
-    bindActionTips();
     return;
   }
   // war — compact war days + in-clan / all-time fame
@@ -454,7 +439,6 @@ function applyMembers(members, label) {
   state.members = members;
   setUpdatedLabel(label);
   if (state.page === 'efficiency') { state.sortKey = 'efficiency'; state.sortDir = 'desc'; }
-  if (state.page === 'risk') { state.sortKey = 'missed'; state.sortDir = 'desc'; }
   renderStats(state.members);
   renderTable();
   // War page only: if DailySummary hasn't painted yet, derive chips from Day 1–4 columns.
