@@ -439,7 +439,7 @@ function renderDayCards(cards) {
   const list = cards && cards.length ? cards : defaultDayCards();
   el.innerHTML = list.map(c => {
     const cls = c.empty ? 'daycard empty' : 'daycard live';
-    const line = c.empty ? '—' : `<span class="em">${c.perfect}</span>/${c.total}`;
+    const line = c.empty ? '—' : `<span class="em">${c.perfect}</span><span class="den">/${c.total}</span>`;
     return `<div class="${cls}"><div class="day">${esc(c.label)}</div><div class="line">${line}</div></div>`;
   }).join('');
 }

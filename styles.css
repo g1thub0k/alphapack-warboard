@@ -132,6 +132,7 @@ tr:hover td { background: var(--row-hover); }
 .daycard.empty .line { color: var(--muted); font-weight: 500; font-size: 1rem; }
 .daycard.live .line { color: var(--text); }
 .daycard .line .em { color: var(--good); }
+.daycard .line .den { color: var(--muted); font-weight: 600; }
 
 /* Compact Days column: phone only; desktop keeps Day 1–4 */
 .days-compact .dchip { font-weight: 650; }
