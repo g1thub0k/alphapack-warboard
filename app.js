@@ -152,6 +152,13 @@ function actionClass(action) {
   return 'warn';
 }
 
+function thisWeekAttacks(m) {
+  const s = String(m.thisWeek ?? '');
+  const m2 = s.match(/\((\d+)\s*\/\s*\d+\)/);
+  if (m2) return num(m2[1]);
+  return 0;
+}
+
 function dayVal(v) {
   if (v === '' || v == null) return null;
   const n = Number(v);
@@ -187,6 +194,10 @@ function filtered() {
   const dir = state.sortDir === 'asc' ? 1 : -1;
   rows.sort((a, b) => {
     let av = a[key], bv = b[key];
+    if (key === 'thisWeekAttacks') {
+      av = thisWeekAttacks(a); bv = thisWeekAttacks(b);
+      return (av - bv) * dir;
+    }
     if (['missed','efficiency','contribution','fame','rank','daysInClan'].includes(key)) {
       av = num(av); bv = num(bv);
       return (av - bv) * dir;
@@ -228,18 +239,18 @@ function renderTable() {
         <td class="mono">${m.rank || '—'}</td>
         <td class="mono">${esc(m.thisWeek)}</td>
         <td class="mono">${esc(m.lastWeek)}</td>
+        <td class="mono">${num(m.fame).toLocaleString()}</td>
+        <td class="mono">${num(m.daysInClan).toFixed(0)}</td>
       </tr>`).join('');
     return;
   }
-  // war — compact war days + in-clan / all-time fame
+  // war — no Missed column; This week (attacks) is the sort key
   tbody.innerHTML = rows.map(m => `
     <tr>
       <td><div class="name">${esc(m.name)}</div><div class="role">${esc(m.role)}</div></td>
-      <td class="mono">${num(m.missed).toFixed(0)}</td>
       ${daysCompactCell(m)}
       <td>${actionBadge(m)}</td>
-      <td class="mono">${num(m.daysInClan).toFixed(0)}</td>
-      <td class="mono">${num(m.fame).toLocaleString()}</td>
+      <td class="mono">${esc(m.thisWeek) || '—'}</td>
       <td class="col-eff mono">${num(m.efficiency).toFixed(1)}</td>
     </tr>`).join('');
   bindActionTips();
@@ -249,9 +260,14 @@ function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+function thDefaultAsc(key) {
+  const th = document.querySelector(`th[data-sort="${key}"]`);
+  return th && th.dataset.default === 'asc';
+}
+
 function setSort(key) {
   if (state.sortKey === key) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
-  else { state.sortKey = key; state.sortDir = ['name','role','action'].includes(key) ? 'asc' : 'desc'; }
+  else { state.sortKey = key; state.sortDir = (thDefaultAsc(key) || ['name','role','action'].includes(key)) ? 'asc' : 'desc'; }
   document.querySelectorAll('th[data-sort]').forEach(th => {
     th.classList.toggle('sorted', th.dataset.sort === state.sortKey);
   });
@@ -369,7 +385,7 @@ function parseDailySummary(csvText) {
     let summary = get(cells, 'Summary');
     const empty = total <= 0 || !summary || summary.endsWith('—') || summary.includes(': —');
     if (!summary) {
-      summary = empty ? `${label}: —` : `${label}: ${perfect} perfect attacks out of ${total} members`;
+      summary = empty ? `${label}: —` : `${perfect}/${total}`;
     }
     byOrder[order] = { order, label, perfect, total, summary, empty };
   }
@@ -394,7 +410,7 @@ function dayCardsFromMembers(members) {
       label,
       perfect,
       total,
-      summary: `${label}: ${perfect} perfect attacks out of ${total} members`,
+      summary: `${perfect}/${total}`,
       empty: false,
     };
   });
@@ -406,13 +422,7 @@ function renderDayCards(cards) {
   const list = cards && cards.length ? cards : defaultDayCards();
   el.innerHTML = list.map(c => {
     const cls = c.empty ? 'daycard empty' : 'daycard live';
-    // Day label is already in .day — don't repeat "Thu:" in the body line
-    let line;
-    if (c.empty) {
-      line = '—';
-    } else {
-      line = `<span class="em">${c.perfect}</span> perfect attacks out of ${c.total} members`;
-    }
+    const line = c.empty ? '—' : `<span class="em">${c.perfect}</span>/${c.total}`;
     return `<div class="${cls}"><div class="day">${esc(c.label)}</div><div class="line">${line}</div></div>`;
   }).join('');
 }
@@ -439,6 +449,7 @@ function applyMembers(members, label) {
   state.members = members;
   setUpdatedLabel(label);
   if (state.page === 'efficiency') { state.sortKey = 'efficiency'; state.sortDir = 'desc'; }
+  if (state.page === 'war') { state.sortKey = 'thisWeekAttacks'; state.sortDir = 'asc'; }
   renderStats(state.members);
   renderTable();
   // War page only: if DailySummary hasn't painted yet, derive chips from Day 1–4 columns.

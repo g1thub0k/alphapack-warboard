@@ -107,23 +107,28 @@ tr:hover td { background: var(--row-hover); }
 .empty { padding: 28px; text-align: center; color: var(--muted); }
 
 .daycards {
-  display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px;
-  margin-bottom: 14px;
+  display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px;
+  margin-bottom: 12px;
 }
-@media (max-width: 800px) { .daycards { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 800px) { .daycards { grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; } }
 .daycard {
   background: linear-gradient(180deg, var(--panel), var(--panel2));
-  border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px;
-  min-height: 72px; display: flex; flex-direction: column; gap: 6px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 8px 6px 10px; min-height: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; text-align: center;
 }
 .daycard .day {
-  color: var(--accent); font-size: 0.78rem; font-weight: 700;
+  color: var(--accent); font-size: 0.68rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.08em;
 }
-.daycard .line { font-size: 0.95rem; font-weight: 560; line-height: 1.35; }
-.daycard.empty .line { color: var(--muted); font-weight: 450; }
+.daycard .line {
+  font-size: 1.15rem; font-weight: 700; line-height: 1.15;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+}
+.daycard.empty .line { color: var(--muted); font-weight: 500; font-size: 1rem; }
 .daycard.live .line { color: var(--text); }
-.daycard .line .em { color: var(--good); font-weight: 700; font-variant-numeric: tabular-nums; }
+.daycard .line .em { color: var(--good); }
 
 /* Compact Days column: phone only; desktop keeps Day 1–4 */
 .days-compact .dchip { font-weight: 650; }
