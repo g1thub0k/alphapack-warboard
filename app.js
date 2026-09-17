@@ -79,6 +79,20 @@ function tilesHtml(kind, count) {
   return Array.from({ length: n }, () => `<span class="card-tile ${kind}"></span>`).join('');
 }
 
+
+/** Severity for War secondary sort: Kick → Demote → Yellow+Orange → Yellow → OrangeN → promo → OK. */
+function actionSortRank(m) {
+  const parsed = parseCardStatus(m.status);
+  if (parsed.kind === 'kick') return 500;
+  if (parsed.kind === 'demote') return 400;
+  if (parsed.kind === 'compound') return 300;
+  if (parsed.kind === 'yellow') return 200;
+  if (parsed.kind === 'orange') return 100 + num(parsed.orange);
+  const promo = String(m.action ?? '').trim();
+  if (promo && /promote|fast-track/i.test(promo)) return 50;
+  return 0;
+}
+
 function actionBadge(m) {
   const parsed = parseCardStatus(m.status);
   const tip = tipParts(m, parsed);
@@ -196,7 +210,10 @@ function filtered() {
     let av = a[key], bv = b[key];
     if (key === 'thisWeekAttacks') {
       av = thisWeekAttacks(a); bv = thisWeekAttacks(b);
-      return (av - bv) * dir;
+      const primary = (av - bv) * dir;
+      if (primary !== 0) return primary;
+      // Same attack count: Kick → Demote → Yellow → Orange (always worst-first)
+      return actionSortRank(b) - actionSortRank(a);
     }
     if (['missed','efficiency','contribution','fame','rank','daysInClan'].includes(key)) {
       av = num(av); bv = num(bv);
