@@ -166,11 +166,51 @@ function actionClass(action) {
   return 'warn';
 }
 
+function thisWeekFame(m) {
+  const s = String(m.thisWeek ?? '').trim();
+  const m2 = s.match(/^(\d+)/);
+  return m2 ? num(m2[1]) : 0;
+}
+
 function thisWeekAttacks(m) {
   const s = String(m.thisWeek ?? '');
   const m2 = s.match(/\((\d+)\s*\/\s*\d+\)/);
   if (m2) return num(m2[1]);
   return 0;
+}
+
+
+/** Battle-day date: rolls at 10:00 UTC (Clash decksUsedToday reset). */
+function effectiveBattleDate(now = new Date()) {
+  const utc = new Date(Date.UTC(
+    now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),
+    now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds()
+  ));
+  if (utc.getUTCHours() < 10) utc.setUTCDate(utc.getUTCDate() - 1);
+  return utc;
+}
+
+/**
+ * Default War sort score — higher = worse = nearer the top.
+ * Thu: fewest attacks so far (Day 1 not locked yet) → invert attacks.
+ * Fri: Thursday missed only.
+ * Sat: Thu+Fri missed.
+ * Sun: Thu+Fri+Sat missed.
+ * Mon–Wed: Missed Attacks week total.
+ */
+function warMissedSortValue(m) {
+  const d = effectiveBattleDate();
+  const wd = d.getUTCDay(); // Sun=0 ... Sat=6
+  const dayMissed = (n) => {
+    const v = dayVal(m[['d1','d2','d3','d4'][n - 1]]);
+    return v == null ? 0 : v;
+  };
+  if (wd === 5) return dayMissed(1);                 // Fri → Thu
+  if (wd === 6) return dayMissed(1) + dayMissed(2); // Sat → Thu+Fri
+  if (wd === 0) return dayMissed(1) + dayMissed(2) + dayMissed(3); // Sun
+  if (wd === 1 || wd === 2 || wd === 3) return num(m.missed); // Mon–Wed totals
+  // Thursday: Day 1 still live — surface people with fewest attacks
+  return 4 - Math.min(4, thisWeekAttacks(m));
 }
 
 function dayVal(v) {
@@ -208,6 +248,14 @@ function filtered() {
   const dir = state.sortDir === 'asc' ? 1 : -1;
   rows.sort((a, b) => {
     let av = a[key], bv = b[key];
+    if (key === 'warMissed') {
+      const primary = (warMissedSortValue(b) - warMissedSortValue(a)); // most missed first
+      if (primary !== 0) return primary;
+      // Same miss score: highest this-week fame first (esp. the 0-missed block)
+      const fameCmp = thisWeekFame(b) - thisWeekFame(a);
+      if (fameCmp !== 0) return fameCmp;
+      return actionSortRank(b) - actionSortRank(a);
+    }
     if (key === 'thisWeekAttacks') {
       av = thisWeekAttacks(a); bv = thisWeekAttacks(b);
       const primary = (av - bv) * dir;
@@ -439,7 +487,7 @@ function renderDayCards(cards) {
   const list = cards && cards.length ? cards : defaultDayCards();
   el.innerHTML = list.map(c => {
     const cls = c.empty ? 'daycard empty' : 'daycard live';
-    const line = c.empty ? '—' : `<span class="em">${c.perfect}</span>/${c.total}`;
+    const line = c.empty ? '—' : `<span class="em">${c.perfect}</span><span class="den">/${c.total}</span>`;
     return `<div class="${cls}"><div class="day">${esc(c.label)}</div><div class="line">${line}</div></div>`;
   }).join('');
 }
@@ -466,7 +514,7 @@ function applyMembers(members, label) {
   state.members = members;
   setUpdatedLabel(label);
   if (state.page === 'efficiency') { state.sortKey = 'efficiency'; state.sortDir = 'desc'; }
-  if (state.page === 'war') { state.sortKey = 'thisWeekAttacks'; state.sortDir = 'asc'; }
+  if (state.page === 'war') { state.sortKey = 'warMissed'; state.sortDir = 'desc'; }
   renderStats(state.members);
   renderTable();
   // War page only: if DailySummary hasn't painted yet, derive chips from Day 1–4 columns.
