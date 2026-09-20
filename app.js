@@ -186,28 +186,40 @@ function bindHeaderTips() {
   const thead = document.querySelector('thead');
   if (!thead || thead.dataset.tipsBound === '1') return;
   thead.dataset.tipsBound = '1';
-  thead.addEventListener('click', (e) => {
-    const tip = e.target.closest('.th-tip.has-tip');
-    if (!tip) return;
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation(); // keep th sort listener from firing
-    const open = tip.classList.contains('open');
+
+  const closeHeaderTips = () => {
     thead.querySelectorAll('.th-tip.has-tip.open').forEach((el) => {
       el.classList.remove('open');
       el.setAttribute('aria-expanded', 'false');
     });
+  };
+
+  const toggleHeaderTip = (tip) => {
+    const open = tip.classList.contains('open');
+    closeHeaderTips();
     if (!open) {
       tip.classList.add('open');
       tip.setAttribute('aria-expanded', 'true');
     }
-  }, true); // capture so we beat the th sort bubble
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('.th-tip.has-tip')) return;
-    thead.querySelectorAll('.th-tip.has-tip.open').forEach((el) => {
-      el.classList.remove('open');
-      el.setAttribute('aria-expanded', 'false');
+  };
+
+  // Bind on the icon itself — iOS often retargets tiny child taps to the <th>.
+  thead.querySelectorAll('.th-tip.has-tip').forEach((tip) => {
+    tip.addEventListener('pointerdown', (e) => {
+      // Kill the synthetic click that would hit <th> and sort.
+      e.preventDefault();
+      e.stopPropagation();
+      toggleHeaderTip(tip);
+    }, { passive: false });
+    tip.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
     });
+  });
+
+  document.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('.th-tip.has-tip')) return;
+    closeHeaderTips();
   });
 }
 
@@ -663,7 +675,10 @@ async function boot() {
 
   document.getElementById('search')?.addEventListener('input', e => { state.q = e.target.value; renderTable(); });
   document.getElementById('filter')?.addEventListener('change', e => { state.filter = e.target.value; renderTable(); });
-  document.querySelectorAll('th[data-sort]').forEach(th => th.addEventListener('click', () => setSort(th.dataset.sort)));
+  document.querySelectorAll('th[data-sort]').forEach(th => th.addEventListener('click', (e) => {
+    if (e.target.closest('.th-tip')) return; // ⓘ = tip only, never sort
+    setSort(th.dataset.sort);
+  }));
   bindHeaderTips();
 }
 
