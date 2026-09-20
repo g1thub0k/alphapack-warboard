@@ -10,6 +10,28 @@ const state = {
 
 function num(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; }
 
+
+/** Clan tenure for War Member subtitle. Blank/missing → omit (role only). Uses round(days/30.44). */
+function formatTenure(days) {
+  if (days == null || days === '') return '';
+  const n = Number(days);
+  if (!Number.isFinite(n)) return '';
+  const d = Math.max(0, Math.round(n));
+  if (d <= 27) return `${d}d`;
+  if (d < 365) return `${Math.max(1, Math.round(d / 30.44))}mo`;
+  const y = Math.floor(d / 365);
+  const mo = Math.round((d - y * 365) / 30.44);
+  return mo > 0 ? `${y}y ${mo}mo` : `${y}y`;
+}
+
+function warRoleSubtitle(m) {
+  const role = String(m.role ?? '').trim();
+  const tenure = formatTenure(m.daysInClan);
+  if (!tenure) return esc(role);
+  return `${esc(role)} · ${esc(tenure)}`;
+}
+
+
 function shortAction(action) {
   const a = (action || 'OK').trim();
   if (!a || a.toUpperCase() === 'OK') return 'OK';
@@ -312,7 +334,7 @@ function renderTable() {
   // war — no Missed column; This week (attacks) is the sort key
   tbody.innerHTML = rows.map(m => `
     <tr>
-      <td><div class="name">${esc(m.name)}</div><div class="role">${esc(m.role)}</div></td>
+      <td><div class="name">${esc(m.name)}</div><div class="role">${warRoleSubtitle(m)}</div></td>
       ${daysCompactCell(m)}
       <td>${actionBadge(m)}</td>
       <td class="mono">${esc(m.thisWeek) || '—'}</td>
@@ -414,7 +436,12 @@ function sheetRowsToMembers(csvText) {
     thisWeek: get(cells, 'This Week Summary'),
     lastWeek: get(cells, 'Last Week Summary'),
     fame: num(get(cells, 'All-Time Fame')),
-    daysInClan: num(get(cells, 'Days in Clan')),
+    daysInClan: (() => {
+      const raw = get(cells, 'Days in Clan');
+      if (!raw) return null;
+      const n = Number(raw);
+      return Number.isFinite(n) ? n : null;
+    })(),
     pendingNotice: get(cells, 'Pending Notice'),
   })).filter(m => m.name || m.tag);
 }
