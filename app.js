@@ -28,7 +28,8 @@ function warRoleSubtitle(m) {
   const role = String(m.role ?? '').trim();
   const tenure = formatTenure(m.daysInClan);
   if (!tenure) return esc(role);
-  return `${esc(role)} · ${esc(tenure)}`;
+  // Dot + tenure quieter than role (same muted, 0.9em / opacity).
+  return `${esc(role)}<span class="tenure"> · ${esc(tenure)}</span>`;
 }
 
 

@@ -92,6 +92,9 @@ th.sorted { color: var(--accent); }
 tr:hover td { background: var(--row-hover); }
 .name { font-weight: 600; }
 .role { color: var(--muted); font-size: 0.85rem; }
+
+/* War tenure quieter than role — scales with .role (incl. phone 0.72rem) */
+.role .tenure { font-size: 0.9em; opacity: 0.75; }
 .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 .badge {
   display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px;
