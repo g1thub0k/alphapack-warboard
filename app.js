@@ -190,9 +190,10 @@ function bindHeaderTips() {
     const tip = e.target.closest('.th-tip.has-tip');
     if (!tip) return;
     e.preventDefault();
-    e.stopPropagation(); // keep th sort click from firing
+    e.stopPropagation();
+    e.stopImmediatePropagation(); // keep th sort listener from firing
     const open = tip.classList.contains('open');
-    thead.querySelectorAll('.has-tip.open').forEach((el) => {
+    thead.querySelectorAll('.th-tip.has-tip.open').forEach((el) => {
       el.classList.remove('open');
       el.setAttribute('aria-expanded', 'false');
     });
@@ -200,10 +201,10 @@ function bindHeaderTips() {
       tip.classList.add('open');
       tip.setAttribute('aria-expanded', 'true');
     }
-  });
+  }, true); // capture so we beat the th sort bubble
   document.addEventListener('click', (e) => {
     if (e.target.closest('.th-tip.has-tip')) return;
-    thead.querySelectorAll('.has-tip.open').forEach((el) => {
+    thead.querySelectorAll('.th-tip.has-tip.open').forEach((el) => {
       el.classList.remove('open');
       el.setAttribute('aria-expanded', 'false');
     });
