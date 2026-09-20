@@ -152,24 +152,29 @@ body[data-page="efficiency"] .col-fame { color: var(--muted); }
   z-index: 40;
 }
 
-/* Phone header definitions: fixed popover avoids table clipping + sticky Member overlap */
+/* Efficiency header tip banner (phone) — under toolbar, not inside the table */
+.eff-tip-banner {
+  display: none;
+  margin: -4px 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #0a0e14;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 450;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.eff-tip-banner:not([hidden]) { display: block; }
 @media (max-width: 800px) {
+  /* Don't float ::after tips inside the scrolling/sticky table on phone */
   body[data-page="efficiency"] .th-tip.has-tip::after {
-    position: fixed;
-    left: 12px;
-    right: 12px;
-    top: auto;
-    bottom: calc(12px + env(safe-area-inset-bottom));
-    transform: none;
-    width: auto;
-    max-width: none;
-    box-sizing: border-box;
-    white-space: normal;
-    overflow-wrap: anywhere;
-    text-align: left;
-    z-index: 1000;
+    content: none !important;
+    display: none !important;
   }
 }
+
 .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 .badge {
   display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px;

@@ -186,24 +186,33 @@ function bindHeaderTips() {
   const thead = document.querySelector('thead');
   if (!thead || thead.dataset.tipsBound === '1') return;
   thead.dataset.tipsBound = '1';
+  const banner = document.getElementById('eff-tip-banner');
+  const phoneTips = () => window.matchMedia('(max-width: 800px)').matches;
 
   const closeHeaderTips = () => {
     thead.querySelectorAll('.th-tip.has-tip.open').forEach((el) => {
       el.classList.remove('open');
       el.setAttribute('aria-expanded', 'false');
     });
+    if (banner) {
+      banner.hidden = true;
+      banner.textContent = '';
+    }
   };
 
   const toggleHeaderTip = (tip) => {
     const open = tip.classList.contains('open');
     closeHeaderTips();
-    if (!open) {
-      tip.classList.add('open');
-      tip.setAttribute('aria-expanded', 'true');
+    if (open) return;
+    tip.classList.add('open');
+    tip.setAttribute('aria-expanded', 'true');
+    // Phone: show under toolbar (avoids table crop / sticky Member). Desktop keeps ::after hover.
+    if (banner && phoneTips()) {
+      banner.textContent = tip.getAttribute('data-tip') || tip.getAttribute('title') || '';
+      banner.hidden = !banner.textContent;
     }
   };
 
-  // Bind on the icon itself — iOS often retargets tiny child taps to the <th>.
   thead.querySelectorAll('.th-tip.has-tip').forEach((tip) => {
     tip.addEventListener('pointerdown', (e) => {
       e.preventDefault();
@@ -218,6 +227,7 @@ function bindHeaderTips() {
 
   document.addEventListener('pointerdown', (e) => {
     if (e.target.closest('.th-tip.has-tip')) return;
+    if (banner && e.target.closest('#eff-tip-banner')) return;
     closeHeaderTips();
   });
 }
