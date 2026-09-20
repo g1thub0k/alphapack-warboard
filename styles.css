@@ -151,6 +151,25 @@ body[data-page="efficiency"] .col-fame { color: var(--muted); }
   text-align: left;
   z-index: 40;
 }
+
+/* Phone header definitions: fixed popover avoids table clipping + sticky Member overlap */
+@media (max-width: 800px) {
+  body[data-page="efficiency"] .th-tip.has-tip::after {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    top: auto;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    transform: none;
+    width: auto;
+    max-width: none;
+    box-sizing: border-box;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: left;
+    z-index: 1000;
+  }
+}
 .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 .badge {
   display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px;
