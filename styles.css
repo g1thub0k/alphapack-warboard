@@ -110,23 +110,25 @@ tr:hover td { background: var(--row-hover); }
 
 /* Header info icon — gap from label; tips sit below (card overflow visible on efficiency) */
 .th-tip {
+  position: relative;
   display: inline-flex; align-items: center; justify-content: center;
   margin-left: 0.35em;
-  /* Visible circle stays small; hit target ~44px for fat-finger taps */
-  width: 1.15em; height: 1.15em; border-radius: 50%;
-  padding: 12px;
-  margin: -12px -8px -12px 0.15em;
-  box-sizing: content-box;
+  width: 1.1em; height: 1.1em; border-radius: 50%;
   font-size: 0.7rem; font-weight: 700; line-height: 1;
   color: var(--muted);
   border: 1px solid color-mix(in srgb, var(--muted) 45%, transparent);
-  background-clip: content-box;
   vertical-align: middle;
   text-transform: none;
   letter-spacing: 0;
   cursor: help;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+}
+/* Invisible fat-finger pad — does not grow the visible circle */
+.th-tip::before {
+  content: '';
+  position: absolute;
+  inset: -12px;
 }
 body[data-page="efficiency"] .card {
   overflow: visible;

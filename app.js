@@ -206,7 +206,6 @@ function bindHeaderTips() {
   // Bind on the icon itself — iOS often retargets tiny child taps to the <th>.
   thead.querySelectorAll('.th-tip.has-tip').forEach((tip) => {
     tip.addEventListener('pointerdown', (e) => {
-      // Kill the synthetic click that would hit <th> and sort.
       e.preventDefault();
       e.stopPropagation();
       toggleHeaderTip(tip);
@@ -222,6 +221,7 @@ function bindHeaderTips() {
     closeHeaderTips();
   });
 }
+
 
 function actionClass(action) {
   const a = (action || '').toLowerCase();
@@ -676,7 +676,7 @@ async function boot() {
   document.getElementById('search')?.addEventListener('input', e => { state.q = e.target.value; renderTable(); });
   document.getElementById('filter')?.addEventListener('change', e => { state.filter = e.target.value; renderTable(); });
   document.querySelectorAll('th[data-sort]').forEach(th => th.addEventListener('click', (e) => {
-    if (e.target.closest('.th-tip')) return; // ⓘ = tip only, never sort
+    if (e.target.closest('.th-tip')) return; // tip icon = definition only
     setSort(th.dataset.sort);
   }));
   bindHeaderTips();
