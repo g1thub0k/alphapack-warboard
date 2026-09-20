@@ -16,37 +16,39 @@
         <h1>Alpha Pack ClanData</h1>
         <div class="sub" id="updated">War board</div>
       </div>
-            <nav class="nav">
+      <nav class="nav">
         <a href="index.html">War status</a>
         <a href="efficiency.html" class="active">Attack efficiency</a>
-<a href="rules.html">Rules</a>
+        <a href="rules.html">Rules</a>
       </nav>
     </header>
-    <div class="stats" id="stats"></div>
     <div class="toolbar">
       <input class="search" id="search" type="search" placeholder="Search name or tag" />
-      
+      <div class="avg-chip" id="avg-eff" aria-label="Average efficiency">
+        <span class="avg-label">Avg eff</span>
+        <span class="avg-value mono">—</span>
+      </div>
     </div>
     <div class="card">
       <div class="table-wrap">
         <table>
           <thead>
-<tr>
-  <th data-sort="name">Member</th>
-  <th data-sort="efficiency">Efficiency</th>
-  <th data-sort="contribution">Contribution</th>
-  <th data-sort="rank">Rank</th>
-  <th>This week</th>
-  <th>Last week</th>
-  <th data-sort="fame">All-time</th>
-  <th data-sort="daysInClan">In clan</th>
-</tr></thead>
+            <tr>
+              <th data-sort="name" class="col-member">Member</th>
+              <th data-sort="efficiency" class="col-eff">Efficiency<span class="th-tip has-tip" tabindex="0" role="button" aria-label="About Efficiency" data-tip="Fame ÷ attacks made. Raw, no adjustment.">i</span></th>
+              <th data-sort="thisWeekAttacks" class="col-week">This week</th>
+              <th data-sort="contribution" class="col-contrib">Contribution<span class="th-tip has-tip" tabindex="0" role="button" aria-label="About Contribution" data-tip="Same as Eff, pulled toward the clan average until 16 attacks.">i</span></th>
+              <th data-sort="rank" class="col-rank">Rank<span class="th-tip has-tip" tabindex="0" role="button" aria-label="About Rank" data-tip="Sorted by Contribution, not Eff.">i</span></th>
+              <th class="col-last">Last week</th>
+              <th data-sort="fame" class="col-fame">All-time</th>
+            </tr>
+          </thead>
           <tbody id="tbody"></tbody>
         </table>
       </div>
       <div class="empty" id="empty" hidden>No members match.</div>
     </div>
-</div>
+  </div>
   <script src="app.js"></script>
 </body>
 </html>

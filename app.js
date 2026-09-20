@@ -181,6 +181,35 @@ function bindActionTips() {
   });
 }
 
+/** Efficiency column header tips — tap the i (does not steal sort). */
+function bindHeaderTips() {
+  const thead = document.querySelector('thead');
+  if (!thead || thead.dataset.tipsBound === '1') return;
+  thead.dataset.tipsBound = '1';
+  thead.addEventListener('click', (e) => {
+    const tip = e.target.closest('.th-tip.has-tip');
+    if (!tip) return;
+    e.preventDefault();
+    e.stopPropagation(); // keep th sort click from firing
+    const open = tip.classList.contains('open');
+    thead.querySelectorAll('.has-tip.open').forEach((el) => {
+      el.classList.remove('open');
+      el.setAttribute('aria-expanded', 'false');
+    });
+    if (!open) {
+      tip.classList.add('open');
+      tip.setAttribute('aria-expanded', 'true');
+    }
+  });
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.th-tip.has-tip')) return;
+    thead.querySelectorAll('.has-tip.open').forEach((el) => {
+      el.classList.remove('open');
+      el.setAttribute('aria-expanded', 'false');
+    });
+  });
+}
+
 function actionClass(action) {
   const a = (action || '').toLowerCase();
   if (!a || a === 'ok') return 'ok';
@@ -242,12 +271,17 @@ function dayVal(v) {
   return Number.isFinite(n) ? n : null;
 }
 
+function avgEfficiency(members) {
+  if (!members.length) return 0;
+  return members.reduce((s, m) => s + num(m.efficiency), 0) / members.length;
+}
+
 function renderStats(members) {
+  // Efficiency page: no war KPI row — Avg eff lives in the toolbar chip.
+  if (state.page === 'efficiency') return;
   const atRisk = members.filter(isAtRiskMember).length;
   const missed = members.filter(m => num(m.missed) > 0).length;
-  const avgEff = members.length
-    ? (members.reduce((s, m) => s + num(m.efficiency), 0) / members.length)
-    : 0;
+  const avgEff = avgEfficiency(members);
   const el = document.getElementById('stats');
   if (!el) return;
   el.innerHTML = `
@@ -256,6 +290,14 @@ function renderStats(members) {
     <div class="stat"><div class="label">At risk</div><div class="value">${atRisk}</div></div>
     <div class="stat"><div class="label">Avg efficiency</div><div class="value">${avgEff.toFixed(1)}</div></div>
   `;
+}
+
+function renderAvgEffChip(members) {
+  const el = document.getElementById('avg-eff');
+  if (!el) return;
+  const val = el.querySelector('.avg-value');
+  if (!val) return;
+  val.textContent = members.length ? avgEfficiency(members).toFixed(1) : '—';
 }
 
 function filtered() {
@@ -321,14 +363,13 @@ function renderTable() {
   if (state.page === 'efficiency') {
     tbody.innerHTML = rows.map(m => `
       <tr>
-        <td><div class="name">${esc(m.name)}</div><div class="role">${esc(m.role)} · ${esc(m.tag)}</div></td>
-        <td class="mono">${num(m.efficiency).toFixed(1)}</td>
-        <td class="mono">${num(m.contribution).toFixed(1)}</td>
-        <td class="mono">${m.rank || '—'}</td>
-        <td class="mono">${esc(m.thisWeek)}</td>
-        <td class="mono">${esc(m.lastWeek)}</td>
-        <td class="mono">${num(m.fame).toLocaleString()}</td>
-        <td class="mono">${num(m.daysInClan).toFixed(0)}</td>
+        <td class="col-member"><div class="name">${esc(m.name)}</div><div class="role">${esc(m.role)}</div></td>
+        <td class="col-eff mono">${num(m.efficiency).toFixed(1)}</td>
+        <td class="col-week mono">${esc(m.thisWeek) || '—'}</td>
+        <td class="col-contrib mono">${num(m.contribution).toFixed(1)}</td>
+        <td class="col-rank mono">${m.rank || '—'}</td>
+        <td class="col-last mono">${esc(m.lastWeek) || '—'}</td>
+        <td class="col-fame mono">${num(m.fame).toLocaleString()}</td>
       </tr>`).join('');
     return;
   }
@@ -544,6 +585,7 @@ function applyMembers(members, label) {
   if (state.page === 'efficiency') { state.sortKey = 'efficiency'; state.sortDir = 'desc'; }
   if (state.page === 'war') { state.sortKey = 'warMissed'; state.sortDir = 'desc'; }
   renderStats(state.members);
+  renderAvgEffChip(state.members);
   renderTable();
   // War page only: if DailySummary hasn't painted yet, derive chips from Day 1–4 columns.
   if (document.getElementById('daycards') && !state.dayCardsLoaded) {
@@ -621,6 +663,7 @@ async function boot() {
   document.getElementById('search')?.addEventListener('input', e => { state.q = e.target.value; renderTable(); });
   document.getElementById('filter')?.addEventListener('change', e => { state.filter = e.target.value; renderTable(); });
   document.querySelectorAll('th[data-sort]').forEach(th => th.addEventListener('click', () => setSort(th.dataset.sort)));
+  bindHeaderTips();
 }
 
 boot();
