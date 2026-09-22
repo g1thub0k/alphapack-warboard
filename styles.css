@@ -61,11 +61,11 @@ a { color: inherit; text-decoration: none; }
 .card {
   background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
 }
-/* War phone: no horizontal scroll — keep the card clipped and the table locked */
+/* War phone: lock width via table-layout (no h-scroll) but keep overflow visible for Action tips */
 @media (max-width: 800px) {
-  body[data-page="war"] .card { overflow: hidden; }
+  body[data-page="war"] .card { overflow: visible; }
   body[data-page="war"] .table-wrap {
-    overflow-x: hidden;
+    overflow: visible;
     overscroll-behavior-x: none;
     touch-action: pan-y;
     border: 1px solid var(--border);
@@ -255,10 +255,17 @@ body[data-page="efficiency"] .col-fame { color: var(--muted); }
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  body[data-page="war"] th,
-  body[data-page="war"] td {
-    overflow: hidden;
+  /* Don't overflow:hidden the Action cell — clips .has-tip reason popovers */
+  body[data-page="war"] td:has(.has-tip),
+  body[data-page="war"] td:has(.action-cards),
+  body[data-page="war"] td:has(.badge) {
+    overflow: visible;
   }
+
+body[data-page="war"] .has-tip { z-index: 5; }
+body[data-page="war"] .has-tip.open,
+body[data-page="war"] .has-tip:hover { z-index: 20; }
+body[data-page="war"] tr:hover { position: relative; z-index: 2; }
 }
 
 
