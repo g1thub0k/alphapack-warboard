@@ -314,12 +314,16 @@ body[data-page="war"] tr:hover { position: relative; z-index: 2; }
 .has-tip::after {
   content: attr(data-tip);
   position: absolute;
-  left: 0;
+  left: 50%;
   bottom: calc(100% + 8px);
-  width: max-content;
-  max-width: min(280px, 78vw);
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  width: min(280px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
   padding: 8px 10px;
   border-radius: 8px;
+  /* Fully opaque — don't fade the bubble with opacity (that makes the table show through) */
+  background-color: #0a0e14;
   background: #0a0e14;
   border: 1px solid var(--border);
   color: var(--text);
@@ -327,25 +331,32 @@ body[data-page="war"] tr:hover { position: relative; z-index: 2; }
   font-weight: 450;
   line-height: 1.35;
   white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   text-align: left;
   text-transform: none;
   letter-spacing: normal;
-  opacity: 0;
   pointer-events: none;
   visibility: hidden;
-  transition: opacity 0.12s ease;
-  z-index: 30;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+  opacity: 1;
+  z-index: 40;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.75);
 }
 .has-tip.open::after,
 .has-tip:focus-visible::after {
-  opacity: 1;
   visibility: visible;
 }
 @media (hover: hover) and (pointer: fine) {
   .has-tip:hover::after {
-    opacity: 1;
     visibility: visible;
+  }
+}
+
+/* War Action reasons: wrap to the phone viewport, stay opaque */
+@media (max-width: 800px) {
+  body[data-page="war"] .has-tip::after {
+    width: min(280px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
   }
 }
 
