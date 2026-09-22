@@ -262,10 +262,17 @@ body[data-page="efficiency"] .col-fame { color: var(--muted); }
     overflow: visible;
   }
 
-body[data-page="war"] .has-tip { z-index: 5; }
+/* Lift the whole row while a tip is open so the next row can't cover the reason */
+body[data-page="war"] .has-tip { position: relative; z-index: 1; }
+body[data-page="war"] tr:has(.has-tip.open),
+body[data-page="war"] tr:has(.has-tip:hover) {
+  position: relative;
+  z-index: 30;
+}
 body[data-page="war"] .has-tip.open,
-body[data-page="war"] .has-tip:hover { z-index: 20; }
-body[data-page="war"] tr:hover { position: relative; z-index: 2; }
+body[data-page="war"] .has-tip:hover {
+  z-index: 40;
+}
 }
 
 
@@ -318,11 +325,11 @@ body[data-page="war"] tr:hover { position: relative; z-index: 2; }
   bottom: calc(100% + 8px);
   transform: translateX(-50%);
   box-sizing: border-box;
-  width: min(280px, calc(100vw - 24px));
-  max-width: calc(100vw - 24px);
+  /* Shrink to reason text; only grow/wrap up to the screen */
+  width: max-content;
+  max-width: min(280px, calc(100vw - 24px));
   padding: 8px 10px;
   border-radius: 8px;
-  /* Fully opaque — don't fade the bubble with opacity (that makes the table show through) */
   background-color: #0a0e14;
   background: #0a0e14;
   border: 1px solid var(--border);
@@ -339,7 +346,7 @@ body[data-page="war"] tr:hover { position: relative; z-index: 2; }
   pointer-events: none;
   visibility: hidden;
   opacity: 1;
-  z-index: 40;
+  z-index: 60;
   box-shadow: 0 10px 28px rgba(0,0,0,0.75);
 }
 .has-tip.open::after,
@@ -349,14 +356,6 @@ body[data-page="war"] tr:hover { position: relative; z-index: 2; }
 @media (hover: hover) and (pointer: fine) {
   .has-tip:hover::after {
     visibility: visible;
-  }
-}
-
-/* War Action reasons: wrap to the phone viewport, stay opaque */
-@media (max-width: 800px) {
-  body[data-page="war"] .has-tip::after {
-    width: min(280px, calc(100vw - 24px));
-    max-width: calc(100vw - 24px);
   }
 }
 
