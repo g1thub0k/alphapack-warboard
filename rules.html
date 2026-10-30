@@ -14,6 +14,7 @@
     .rules h1.page { margin: 0; font-size: 1.25rem; }
     .rules .lead { color: var(--muted); margin: 0.4rem 0 0; line-height: 1.55; font-size: 0.95rem; }
     .rules h2 { font-size: 1.02rem; margin: 1.55rem 0 0.5rem; }
+    .rules h2.section { font-size: 1.12rem; margin-top: 2rem; padding-top: 1.1rem; border-top: 1px solid var(--border); }
     .rules p, .rules li { color: var(--text); line-height: 1.55; font-size: 0.95rem; }
     .rules p { margin: 0.4rem 0 0.65rem; }
     .rules ul { padding-left: 1.15rem; margin: 0.35rem 0 0.7rem; }
@@ -22,6 +23,8 @@
     .rules .muted { color: var(--muted); }
     .rules table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 0.45rem 0 0.9rem; }
     .rules th, .rules td { text-align: left; padding: 0.5rem 0.55rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .rules table { table-layout: fixed; }
+    .rules th, .rules td { white-space: normal; overflow-wrap: anywhere; }
     .rules th { color: var(--muted); font-weight: 560; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
     .rules .example {
       background: var(--panel2);
@@ -60,6 +63,7 @@
     }
     .tile-y { background: #f5c542; }
     .tile-o { background: #e85d04; }
+    .tile-r { background: #e53935; }
     .when { display: flex; flex-wrap: wrap; gap: 8px; margin: 0.5rem 0 0.2rem; }
     .when span {
       background: var(--panel2);
@@ -90,7 +94,7 @@
     <div class="card rules">
       <div class="card-pad">
         <h1 class="page">Clan rules</h1>
-        <p class="lead">Fifty people. Four decks. Every war day. The Action column is the referee: yellow tile, orange tiles, or both at once.</p>
+        <p class="lead">Fifty people. Four decks. Every war day. The Action column is the referee: red tile, yellow tile, orange tiles, or a mix.</p>
 
         <h2>How to read a week</h2>
         <dl class="defs">
@@ -108,13 +112,14 @@
           </div>
           <div class="def">
             <dt>Notice</dt>
-            <dd>Tell us before or during the week. We tick Pending Notice. That whole week is excused. One notice every four weeks.</dd>
+            <dd>Tell us before or during the week. We tick Pending Notice. Missed days that week are excused (not low Fame on days you did attack). One notice every four weeks.</dd>
           </div>
         </dl>
-        <p class="muted">A noticed week is not 16/16. It cannot be orange, yellow, or a kick for missed days.</p>
+        <p class="muted">A noticed week is not 16/16. It cannot be yellow or a kick for missed days. It can still be orange.</p>
 
         <h2>What you see under Action</h2>
         <p>
+          <span class="tile tile-r" title="Red"></span> member saved from a kick once (Red Card) &nbsp;
           <span class="tile tile-y" title="Yellow"></span> missed days &nbsp;
           <span class="tile tile-o" title="Orange"></span>
           <span class="tile tile-o" title="Orange"></span> showed up every day, fame too low &nbsp;
@@ -122,7 +127,8 @@
           <span class="badge bad">Demote</span> drop one role &nbsp;
           <span class="badge bad">Kick</span> seat is free
         </p>
-        <p class="muted">No words on the tiles. Two orange tiles means two orange weeks. Yellow and orange can sit together — both stay visible. No red card.</p>
+        <p class="muted">No words on the tiles. Two orange tiles means two orange weeks. Tap a tile to see the reason.</p>
+        <p class="muted"><strong>Stacking:</strong> elders and co-leaders can hold Yellow and Orange at once (e.g. <span class="tile tile-y" title="Yellow"></span><span class="tile tile-o" title="Orange"></span><span class="tile tile-o" title="Orange"></span> Yellow + Orange 2). Members don't get Yellow — they can hold Red and Orange at once instead (e.g. <span class="tile tile-r" title="Red"></span><span class="tile tile-o" title="Orange"></span><span class="tile tile-o" title="Orange"></span> Red + Orange 2).</p>
 
         <h2>Yellow — missed days</h2>
         <p>Elders and co-leaders. One yellow tile. Role stays when it is issued.</p>
@@ -137,7 +143,7 @@
             </tr>
             <tr>
               <td>One blank day and under the fame floor</td>
-              <td>Yellow Monday. Floor is 2,500 co-leader / 2,200 elder</td>
+              <td>Yellow Monday. Floor is 2,500 co-leader / 2,200 elder. If you have oranges, one comes off</td>
             </tr>
             <tr>
               <td>One blank day, fame at or over the floor</td>
@@ -157,35 +163,20 @@
             </tr>
           </tbody>
         </table>
-        <p>Co-leader drops to elder. Elder drops to member. Two straight <strong>16/16</strong> weeks clear Yellow. Orange still moves on its own those weeks (add if under the floor, one off if over).</p>
+        <p>Co-leader drops to elder. Elder drops to member. Two straight <strong>16/16</strong> weeks clear Yellow. Orange still moves on its own those weeks (see Elder &amp; Co-Leader Performance Rules below).</p>
         <p class="muted">15/16, 14/16, 13/16 are not yellow if you played every day. 12/16 is yellow only when one of those days was actually zero — unless fame is under the floor, in which case one blank day is yellow anyway.</p>
 
-        <h2>Orange — every day played, fame too low</h2>
-        <p>Elders and co-leaders. No blank day, and fame under the floor.</p>
-        <table>
-          <thead>
-            <tr><th>Week</th><th>Under 2,500 co / 2,200 elder</th><th>At or over the floor</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>16/16 or 15/16 / 14/16 / 12/16 with every day touched</td>
-              <td>Add one orange tile (max three, then Demote)</td>
-              <td>Take one orange off. At zero → <span class="badge ok">OK</span></td>
-            </tr>
-            <tr>
-              <td>One blank day</td>
-              <td>Yellow (oranges stay; no add)</td>
-              <td>No yellow. Take one orange off</td>
-            </tr>
-            <tr>
-              <td>Already yellow, 16/16 under floor</td>
-              <td>Add one orange. Yellow stays until two 16/16 weeks</td>
-              <td>Take one orange off. Yellow still needs the 16/16 pair</td>
-            </tr>
-          </tbody>
-        </table>
-        <p>Three orange weeks, then <span class="badge bad">Demote</span> Monday — even if Yellow is still showing. One good week knocks off one tile — never the whole stack.</p>
-        <p class="example">Example: two oranges, then a yellow week, then 16/16 under the floor → two oranges + yellow become three oranges + yellow. Next under-floor 16/16 is Demote. A 16/16 over the floor while yellow is still on takes one orange off.</p>
+        <h2 class="section">Elder &amp; Co-Leader Performance Rules</h2>
+        <h2>Low Output Despite Full Attendance: <span class="tile tile-o" title="Orange"></span>Orange Card</h2>
+        <p>If you attack on every war day but finish the week below your role's Fame floor, you earn an Orange Card.</p>
+        <ul>
+          <li>Fame floors: Elders 2200, Co-Leaders 2500.</li>
+          <li>Orange Cards build up week over week. Each week you attack every day and finish under your floor adds one.</li>
+          <li>4 Orange weeks in a row results in demotion: Elders drop to Member, Co-Leaders drop to Elder.</li>
+          <li>Any week you clear your floor with full attendance reduces your Orange count by one. A week with exactly 1 missed day also reduces it by one, but it can never add to it.</li>
+          <li>A Notice does not protect against Orange. Notice only excuses missed days, not low Fame on days you did attack.</li>
+          <li>Orange and Yellow Cards are tracked separately, so you can hold both at the same time.</li>
+        </ul>
 
         <h2>Kick — the seat is free</h2>
         <p>New members and members (not elder / co-leader):</p>
@@ -193,8 +184,30 @@
           <li>Two blank days, no notice → out when the second day ends (usually Saturday)</li>
           <li>A full 0/4 week, no notice → out Monday</li>
         </ul>
+        <p>Either kick can be avoided once by the <strong>Red Card</strong> exemption — see Member Attendance &amp; Performance below.</p>
         <p>Elders and co-leaders are not kicked on the first collapse. They drop a role first. After elder → member, the kick rule applies.</p>
         <p class="muted">Eight straight 16/16 weeks is what turns one 0/4 into a yellow. Contribution total and months in the clan do not.</p>
+
+        <h2 class="section">Member Attendance &amp; Performance Rules (updated)</h2>
+
+        <h2>Missed Attacks</h2>
+        <p>A Member who misses 2 or more attack days in a war week is normally removed from the clan.</p>
+
+        <h2>Performance Exemption — <span class="tile tile-r" title="Red"></span>Red Card</h2>
+        <p>If your average Medals/Day over your last 4 completed war weeks is 600 or higher, you’ll be spared from that kick — once. Being saved this way puts you on a Red Card for the next 4 weeks.</p>
+        <ul>
+          <li>While on a Red Card, a second war week with 2+ missed days results in immediate removal — no exceptions, regardless of how strong your average still is.</li>
+          <li>The Red Card clears automatically after 4 weeks pass without another 2+-missed-days week.</li>
+          <li>A single missed day (not two) during those 4 weeks is fine and won’t restart the clock.</li>
+        </ul>
+
+        <h2>Low Output Despite Full Attendance — <span class="tile tile-o" title="Orange"></span>Orange Card</h2>
+        <p>Even if you attack every day, averaging below 2000 Fame for the week earns an Orange Card.</p>
+        <ul>
+          <li>Orange Cards build up week over week if your Fame stays under 2000.</li>
+          <li>4 Orange weeks in a row results in removal.</li>
+          <li>Any week you clear 2000 Fame with full attendance reduces your Orange count by one. A week with exactly 1 missed day also reduces it by one, but it can never add to it.</li>
+        </ul>
 
         <h2>Promotions</h2>
         <p class="muted">Monday only. No promotion the same week you are demoted or kicked.</p>
@@ -206,7 +219,7 @@
 
         <h2>When the board updates</h2>
         <div class="when">
-          <span><strong>Saturday / Sunday</strong> Blank-day yellows, mid-week demotes, kicks. Days not started yet are not misses.</span>
+          <span><strong>Saturday / Sunday</strong> Blank-day yellows, Red Cards, mid-week demotes, kicks. Days not started yet are not misses.</span>
           <span><strong>Monday</strong> Fame, orange add/wipe, 0/4, promotions.</span>
         </div>
 

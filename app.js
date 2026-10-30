@@ -50,29 +50,48 @@ function isTruthyFlag(v) {
   return s === 'true' || s === 'yes' || s === '1' || s === 'checked';
 }
 
-/** Card Status from script only — never invent from Eff/Fame. Supports Yellow+OrangeN. */
+/** Card Status from script only — never invent from Eff/Fame.
+ *  Supports Red, Yellow, OrangeN and compounds like Red+Orange1, Yellow+Orange2.
+ *  Red is matched case-insensitively ("Red", "Red Card", "Red2", "RED"...). */
 function parseCardStatus(raw) {
   const s = String(raw ?? '').trim();
   if (!s) return { kind: 'empty' };
   if (/^OK$/i.test(s)) return { kind: 'ok' };
-  if (/^Kick$/i.test(s)) return { kind: 'kick' };
-  if (/^Demote$/i.test(s)) return { kind: 'demote' };
-  const compound = s.match(/^Yellow\s*\+\s*Orange([1-3])$/i);
-  if (compound) return { kind: 'compound', orange: parseInt(compound[1], 10) };
-  if (/^Yellow$/i.test(s)) return { kind: 'yellow' };
-  const orange = s.match(/^Orange([1-3])$/i);
-  if (orange) return { kind: 'orange', orange: parseInt(orange[1], 10) };
-  return { kind: 'unknown', raw: s };
+  if (/^Kick/i.test(s)) return { kind: 'kick' };
+  if (/^Demote/i.test(s)) return { kind: 'demote' };
+  const tokens = s.split(/\s*[+&,\/]\s*/).filter(Boolean);
+  let red = false, yellow = false, orange = 0, ok = tokens.length > 0;
+  for (const t of tokens) {
+    if (/^red\b|^red\s*card|^red\s*\d*$/i.test(t)) { red = true; continue; }
+    if (/^yellow\b/i.test(t)) { yellow = true; continue; }
+    const o = t.match(/^orange\s*(\d*)/i);
+    if (o) { orange = Math.max(orange, o[1] ? parseInt(o[1], 10) : 1); continue; }
+    ok = false;
+  }
+  // Unrecognised wording that still says "red" (e.g. "On Red") → red tile
+  if (!ok && /(^|[^a-z])red([^a-z]|$)/i.test(s)) { red = true; ok = true; }
+  if (!ok || (!red && !yellow && !orange)) return { kind: 'unknown', raw: s };
+  return { kind: 'cards', red, yellow, orange };
 }
 
 function isAtRiskMember(m) {
-  // Prefer flags — catches Yellow+Orange2 without exact-match bugs
+  // Prefer flags — catches compounds without exact-match bugs
+  if (isTruthyFlag(m.redActive)) return true;
   if (isTruthyFlag(m.yellowActive)) return true;
   if (num(m.orangeStreak) > 0) return true;
   const s = String(m.status ?? '').trim();
   if (/Kick|Demote|Yellow|Orange/i.test(s)) return true;
+  if (parseCardStatus(s).red) return true;
   // Demotions/kicks no longer live in Suggested Action — ignore it here
   return false;
+}
+
+function cardsLabel(parsed) {
+  const bits = [];
+  if (parsed.red) bits.push('Red');
+  if (parsed.yellow) bits.push('Yellow');
+  if (parsed.orange) bits.push(`Orange ${parsed.orange}`);
+  return bits.join(' + ');
 }
 
 function tipParts(m, parsed) {
@@ -80,9 +99,7 @@ function tipParts(m, parsed) {
   const roleAfter = String(m.roleAfter || '').trim();
   const notified = isTruthyFlag(m.pendingNotice);
   const parts = [];
-  if (parsed.kind === 'yellow') parts.push('Yellow');
-  else if (parsed.kind === 'orange') parts.push(`Orange ${parsed.orange}`);
-  else if (parsed.kind === 'compound') parts.push(`Yellow + Orange ${parsed.orange}`);
+  if (parsed.kind === 'cards') parts.push(cardsLabel(parsed));
   else if (parsed.kind === 'demote') parts.push(roleAfter ? `Demote → ${roleAfter}` : 'Demote');
   else if (parsed.kind === 'kick') parts.push('Kick');
   else if (parsed.kind === 'unknown') parts.push(parsed.raw);
@@ -98,19 +115,21 @@ function wrapTip(inner, tip) {
 }
 
 function tilesHtml(kind, count) {
-  const n = Math.max(1, Math.min(3, count));
+  const n = Math.max(1, Math.min(4, count));
   return Array.from({ length: n }, () => `<span class="card-tile ${kind}"></span>`).join('');
 }
 
 
-/** Severity for War secondary sort: Kick → Demote → Yellow+Orange → Yellow → OrangeN → promo → OK. */
+/** Severity for War secondary sort: Kick → Demote → Red(+Orange) → Yellow(+Orange) → OrangeN → promo → OK. */
 function actionSortRank(m) {
   const parsed = parseCardStatus(m.status);
   if (parsed.kind === 'kick') return 500;
   if (parsed.kind === 'demote') return 400;
-  if (parsed.kind === 'compound') return 300;
-  if (parsed.kind === 'yellow') return 200;
-  if (parsed.kind === 'orange') return 100 + num(parsed.orange);
+  if (parsed.kind === 'cards') {
+    if (parsed.red) return 350 + num(parsed.orange);
+    if (parsed.yellow) return (parsed.orange ? 300 : 200) + num(parsed.orange);
+    return 100 + num(parsed.orange);
+  }
   const promo = String(m.action ?? '').trim();
   if (promo && /promote|fast-track/i.test(promo)) return 50;
   return 0;
@@ -121,15 +140,11 @@ function actionBadge(m) {
   const tip = tipParts(m, parsed);
   const notified = isTruthyFlag(m.pendingNotice);
 
-  if (parsed.kind === 'compound') {
-    const inner = `<span class="action-cards">${tilesHtml('yellow', 1)}${tilesHtml('orange', parsed.orange)}</span>`;
-    return wrapTip(inner, tip);
-  }
-  if (parsed.kind === 'orange') {
-    return wrapTip(`<span class="action-cards">${tilesHtml('orange', parsed.orange)}</span>`, tip);
-  }
-  if (parsed.kind === 'yellow') {
-    return wrapTip(`<span class="action-cards">${tilesHtml('yellow', 1)}</span>`, tip);
+  if (parsed.kind === 'cards') {
+    const inner = (parsed.red ? tilesHtml('red', 1) : '')
+      + (parsed.yellow ? tilesHtml('yellow', 1) : '')
+      + (parsed.orange ? tilesHtml('orange', parsed.orange) : '');
+    return wrapTip(`<span class="action-cards">${inner}</span>`, tip);
   }
   if (parsed.kind === 'kick') {
     const label = 'Kick' + (notified ? ' · N' : '');
@@ -348,7 +363,7 @@ function filtered() {
       av = thisWeekAttacks(a); bv = thisWeekAttacks(b);
       const primary = (av - bv) * dir;
       if (primary !== 0) return primary;
-      // Same attack count: Kick → Demote → Yellow → Orange (always worst-first)
+      // Same attack count: Kick → Demote → Red → Yellow → Orange (always worst-first)
       return actionSortRank(b) - actionSortRank(a);
     }
     if (['missed','efficiency','contribution','fame','rank','daysInClan'].includes(key)) {
@@ -495,6 +510,8 @@ function sheetRowsToMembers(csvText) {
     yellowCleanStreak: num(get(cells, 'Yellow Clean Streak')),
     streakWeeks: num(get(cells, 'Streak Weeks')),
     orangeStreak: num(get(cells, 'Orange Streak')),
+    redActive: get(cells, 'Red Active'),
+    redStreak: num(get(cells, 'Red Streak')),
     efficiency: num(get(cells, 'Attack Efficiency')),
     contribution: num(get(cells, 'Contribution Score')),
     rank: num(get(cells, 'Contribution Rank')),

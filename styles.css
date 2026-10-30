@@ -382,6 +382,10 @@ body[data-page="war"] .has-tip:hover {
   background: #e85d04; /* deeper orange, not yellow-adjacent */
   box-shadow: inset 0 0 0 1px rgba(0,0,0,0.25);
 }
+.card-tile.red {
+  background: #e53935; /* red card */
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.3);
+}
 .has-tip {
   position: relative;
   display: inline-flex;
@@ -391,4 +395,6 @@ body[data-page="war"] .has-tip:hover {
 }
 
 /* Space yellow vs orange when both show (Yellow+OrangeN) */
-.action-cards .card-tile.yellow + .card-tile.orange { margin-left: 2px; }
+.action-cards .card-tile.yellow + .card-tile.orange,
+.action-cards .card-tile.red + .card-tile.yellow,
+.action-cards .card-tile.red + .card-tile.orange { margin-left: 2px; }
